@@ -1,0 +1,55 @@
+services:
+  npm:
+    image: verdaccio/verdaccio:6
+    ports: ["127.0.0.1:4873:4873"]
+    volumes:
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+      - npm-data:/verdaccio/storage
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4873/-/ping').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  mcp-runner:
+    image: mcp-registry-app:local
+    command: ["bun", "src/runner.ts"]
+    environment:
+      RUNNER_PORT: "3001"
+      NPM_SOURCE_URL: http://npm:4873
+      MCP_DATA_DIR: /data
+      MCP_RUNNER_INTERNAL_TOKEN: ${MCP_RUNNER_INTERNAL_TOKEN:-prototype-demo-token}
+    volumes:
+      - runner-data:/data
+    depends_on:
+      npm: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  mcp-registry:
+    image: mcp-registry-app:local
+    build:
+      context: .
+    command: ["bun", "src/registry.ts"]
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      REGISTRY_PORT: "3000"
+      NPM_SOURCE_URL: http://npm:4873
+      MCP_RUNNER_URL: http://mcp-runner:3001
+      MCP_RUNNER_INTERNAL_TOKEN: ${MCP_RUNNER_INTERNAL_TOKEN:-prototype-demo-token}
+      MCP_REGISTRY_ADMIN_TOKEN: ${MCP_REGISTRY_ADMIN_TOKEN:-prototype-admin-token}
+    depends_on:
+      npm: { condition: service_healthy }
+      mcp-runner: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  npm-data:
+  runner-data:

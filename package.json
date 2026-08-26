@@ -1,0 +1,6 @@
+{
+  "name": "open-mcp-market",
+  "private": true,
+  "description": "Open MCP Market 规范、SDK、Registry 与参考实现 workspace",
+  "workspaces": ["examples/plugins/monorepo", "examples/mcp-registry", "packages/mcpp"]
+}

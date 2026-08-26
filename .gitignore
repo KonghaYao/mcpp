@@ -1,0 +1,12 @@
+node_modules/
+dist/
+examples/plugins/monorepo/dist-worker/
+examples/mcp-registry/data/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage/
+*.tgz

@@ -1,0 +1,13 @@
+{
+  "name": "@example/echo-mcp",
+  "version": "1.0.0",
+  "description": "Echo MCP Registry prototype fixture",
+  "type": "module",
+  "keywords": ["mcp-plugin"],
+  "files": ["dist"],
+  "mcpp": {
+    "servers": {
+      "default": { "runtime": "serverless", "entry": "./dist/server.js" }
+    }
+  }
+}
