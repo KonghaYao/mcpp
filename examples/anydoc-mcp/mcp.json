@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "anydoc": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/server.js"]
+    }
+  }
+}

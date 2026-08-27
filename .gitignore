@@ -10,3 +10,4 @@ examples/mcp-registry/data/
 *.log
 coverage/
 *.tgz
+.claude/

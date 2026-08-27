@@ -1,0 +1,8 @@
+{
+  "name": "@open-mcp-market/server",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "bun src/main.ts", "test": "bun test", "typecheck": "bun x tsc --noEmit" },
+  "dependencies": { "hono": "^4.9.2" },
+  "devDependencies": { "@types/bun": "latest", "typescript": "^7" }
+}

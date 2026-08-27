@@ -1,0 +1,14 @@
+{
+  "name": "@open-mcp-market/anydoc-client-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "bun src/main.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^7"
+  }
+}

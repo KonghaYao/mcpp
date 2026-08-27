@@ -2,5 +2,6 @@
   "name": "open-mcp-market",
   "private": true,
   "description": "Open MCP Market 规范、SDK、Registry 与参考实现 workspace",
-  "workspaces": ["examples/plugins/monorepo", "examples/mcp-registry", "packages/mcpp"]
+  "workspaces": ["examples/plugins/monorepo", "examples/mcp-registry", "examples/anydoc-mcp", "examples/anydoc-client", "packages/mcpp", "packages/mcp-market"],
+  "scripts": { "test": "bun test", "typecheck": "bun run --cwd packages/mcp-market typecheck", "e2e": "bun run --cwd examples/anydoc-client e2e" }
 }
