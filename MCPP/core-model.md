@@ -2,16 +2,15 @@
 
 [文档库首页](index.md) · [上一篇：引言](introduction.md) · [下一篇：Agent Plugin](agent-plugin.md)
 
-
 ## 2.1 能力三角
 
 MCPP 将 MCP 暴露给 Agent 的能力归纳为三类，其 Agent 侧语义为：
 
-| 能力 | MCP 承载 | Agent 侧含义 | 典型内容量 |
-| --- | --- | --- | --- |
-| **Skills**（技能） | Resources + `skills/list`、`skills/get`（SEP-2640） | 「**如何做**」：多步骤工作流、编排指令。决定 Agent 如何调用其他能力 | 中等～大（可达数百行 Markdown），必须渐进披露 |
-| **Tools**（工具） | `tools/list`、`tools/call` | 「**做什么**」：单个可执行动作 | 小（名称 + 描述 + schema） |
-| **Resources**（资源） | `resources/list`、`resources/read` | 「**用到的数据**」：上下文、文档、模板 | 不确定，按需读取 |
+| 能力                  | MCP 承载                                            | Agent 侧含义                                                        | 典型内容量                                    |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------- |
+| **Skills**（技能）    | Resources + `skills/list`、`skills/get`（SEP-2640） | 「**如何做**」：多步骤工作流、编排指令。决定 Agent 如何调用其他能力 | 中等～大（可达数百行 Markdown），必须渐进披露 |
+| **Tools**（工具）     | `tools/list`、`tools/call`                          | 「**做什么**」：单个可执行动作                                      | 小（名称 + 描述 + schema）                    |
+| **Resources**（资源） | `resources/list`、`resources/read`                  | 「**用到的数据**」：上下文、文档、模板                              | 不确定，按需读取                              |
 
 三者可以相互引用，是 MCPP 最重要的编排事实：
 

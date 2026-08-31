@@ -19,5 +19,5 @@ import { createMonorepoRoutesForOpenspec } from "./src/routes.ts";
 const gateway = createMonorepoRoutesForOpenspec(createStaticOpenspecServer);
 
 export default {
-    fetch: gateway.fetch,
+  fetch: gateway.fetch,
 };

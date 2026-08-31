@@ -2,9 +2,34 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
 const allowedTags = [
-  "a", "blockquote", "br", "code", "del", "details", "em", "h1", "h2", "h3",
-  "h4", "h5", "h6", "hr", "img", "li", "ol", "p", "pre", "strong", "summary",
-  "table", "tbody", "td", "th", "thead", "tr", "ul",
+  "a",
+  "blockquote",
+  "br",
+  "code",
+  "del",
+  "details",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "img",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "strong",
+  "summary",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
 ];
 
 export function renderReadme(markdown: string) {

@@ -4,7 +4,6 @@
 
 类型接口：[Channel SDK 接口](channel-sdk.md) · 一致性条款：[S16–S21](conformance.md)
 
-
 MCPP 的服务端推送 **MUST** 只使用 MCP 2026-07-28 的标准 Resource Subscription：Server 将可推送对象建模为可读取 Resource，Client 通过 `subscriptions/listen` 订阅稳定 Resource URI；对象变化时 Server 发送 `notifications/resources/updated`，Client 再以 `resources/read` 读取最新事实。通知只是**失效信号**，不是事件正文、可靠消息或 Agent turn。
 
 - Server 声明 `resources.subscribe: true` 时，具体资源变化经 `subscriptions/listen` 的 `resourceSubscriptions` 过滤器投递；只有新增、删除或重命名 Resource 导致目录变化时，才在声明 `resources.listChanged: true` 后发送 `notifications/resources/list_changed`；
@@ -36,58 +35,58 @@ interface ChatCommandResult {
   accepted: boolean;
 }
 
-const chat = manager.register<
-  ChatEvent,
-  ChatCommand,
-  ChatCommandResult
->({
-  id: "support-chat",
-  title: "Support chat",
-  description: "Bidirectional support conversation events and commands.",
-  schemaVersion: "1",
-  direction: "duplex",
-  observability: {
-    metrics: true,
-    audit: "metadata-only",
-  },
-  outbound: {
-    resourceUri: "mcpp://channels/support-chat",
-    mimeType: "application/json",
-    mode: "event-log",
-    schema: chatEventSchema,
-    durability: "durable",
-    retention: { maxEvents: 10_000, maxAgeMs: 7 * 86_400_000 },
-    maxPayloadBytes: 64 * 1024,
-    subscriberQueueCapacity: 64,
-    enqueueTimeoutMs: 250,
-    overflow: "disconnect-lagged",
-  },
-  inbound: {
-    toolName: "support_chat_receive",
-    toolDescription: "Reply to or mark a visible support conversation as read.",
-    messageSchema: chatCommandSchema,
-    resultSchema: chatCommandResultSchema,
-    resultMode: "synchronous",
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
+const chat = manager.register<ChatEvent, ChatCommand, ChatCommandResult>(
+  {
+    id: "support-chat",
+    title: "Support chat",
+    description: "Bidirectional support conversation events and commands.",
+    schemaVersion: "1",
+    direction: "duplex",
+    observability: {
+      metrics: true,
+      audit: "metadata-only",
     },
-    maxPayloadBytes: 16 * 1024,
-    maxResultBytes: 16 * 1024,
-    timeoutMs: 15_000,
-    queueCapacity: 64,
-    enqueueTimeoutMs: 250,
-    overflow: "reject-before-start",
-    maxConcurrency: 32,
-    durability: "durable",
-    retention: { maxCommands: 100_000, maxAgeMs: 7 * 86_400_000 },
+    outbound: {
+      resourceUri: "mcpp://channels/support-chat",
+      mimeType: "application/json",
+      mode: "event-log",
+      schema: chatEventSchema,
+      durability: "durable",
+      retention: { maxEvents: 10_000, maxAgeMs: 7 * 86_400_000 },
+      maxPayloadBytes: 64 * 1024,
+      subscriberQueueCapacity: 64,
+      enqueueTimeoutMs: 250,
+      overflow: "disconnect-lagged",
+    },
+    inbound: {
+      toolName: "support_chat_receive",
+      toolDescription:
+        "Reply to or mark a visible support conversation as read.",
+      messageSchema: chatCommandSchema,
+      resultSchema: chatCommandResultSchema,
+      resultMode: "synchronous",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+      maxPayloadBytes: 16 * 1024,
+      maxResultBytes: 16 * 1024,
+      timeoutMs: 15_000,
+      queueCapacity: 64,
+      enqueueTimeoutMs: 250,
+      overflow: "reject-before-start",
+      maxConcurrency: 32,
+      durability: "durable",
+      retention: { maxCommands: 100_000, maxAgeMs: 7 * 86_400_000 },
+    },
   },
-}, {
-  store: durableChatStore,
-  authorize: supportChatAuthorizer,
-});
+  {
+    store: durableChatStore,
+    authorize: supportChatAuthorizer,
+  },
+);
 
 chat.receive(async (input, context) => {
   const result = await executeChatCommand({
@@ -98,13 +97,16 @@ chat.receive(async (input, context) => {
     signal: context.signal,
   });
 
-  await context.reply({
-    kind: "delivery-status",
-    text: "Command completed",
-    conversationId: input.message.conversationId,
-  }, {
-    eventId: `command-result:${input.commandId}`,
-  });
+  await context.reply(
+    {
+      kind: "delivery-status",
+      text: "Command completed",
+      conversationId: input.message.conversationId,
+    },
+    {
+      eventId: `command-result:${input.commandId}`,
+    },
+  );
 
   return {
     status: "completed",

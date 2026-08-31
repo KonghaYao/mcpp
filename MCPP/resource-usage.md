@@ -4,7 +4,6 @@
 
 第 8.2 节已独立为 [MCP Channel](mcp-channel.md)；SDK 类型契约见 [Channel SDK 接口](channel-sdk.md)。
 
-
 ## 8.1 读取
 
 - `resources/read` 以 URI 为参数；返回一个或多个 contents（text / blob 均可）：

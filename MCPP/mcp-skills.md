@@ -2,7 +2,6 @@
 
 [文档库首页](index.md) · [上一篇：MCP Registry](mcp-registry.md) · [下一篇：MCP Tools](mcp-tools.md)
 
-
 本章是 MCPP 的核心新增，定义 **MCP Skills**——Skill 的跨协议传递、检校、激活与编排。Skill 的**内容格式**委托给 Agent Skills 规范，**传输绑定**以 SEP-2640 为基线，**编排语义**为 MCPP 自有扩展。
 
 ## 5.1 Skill 承载格式
@@ -55,13 +54,13 @@ metadata:
 ---
 ```
 
-| 字段 | 类型 | 必填 | 语义 |
-| --- | --- | --- | --- |
-| `io.mcpp/version` | string | no | Skill 语义版本（SemVer）。Agent 用作缓存与升级依据 |
-| `io.mcpp/depends_on` | string[] 或 object[] | no | 前置 Skill 引用（见 5.7.1） |
-| `io.mcpp/tools` | object | no | 本 Skill 运行所需的工具绑定：`required`/`optional` 数组 |
-| `io.mcpp/context_budget` | integer | no | 建议注入上下文的符号上限；Agent SHOULD 遵守 |
-| `io.mcpp/provider` | string | no | 提供方标识（公司/团队/作者），用于审计展示 |
+| 字段                     | 类型                 | 必填 | 语义                                                    |
+| ------------------------ | -------------------- | ---- | ------------------------------------------------------- |
+| `io.mcpp/version`        | string               | no   | Skill 语义版本（SemVer）。Agent 用作缓存与升级依据      |
+| `io.mcpp/depends_on`     | string[] 或 object[] | no   | 前置 Skill 引用（见 5.7.1）                             |
+| `io.mcpp/tools`          | object               | no   | 本 Skill 运行所需的工具绑定：`required`/`optional` 数组 |
+| `io.mcpp/context_budget` | integer              | no   | 建议注入上下文的符号上限；Agent SHOULD 遵守             |
+| `io.mcpp/provider`       | string               | no   | 提供方标识（公司/团队/作者），用于审计展示              |
 
 约束：
 
@@ -98,11 +97,11 @@ skill://{org-prefix/}{skillName}/{相对路径}
 
 示例（摘自 SEP-2640）：
 
-| 技能路径 | 文件 | 资源 URI |
-| --- | --- | --- |
-| `git-workflow` | `SKILL.md` | `skill://git-workflow/SKILL.md` |
-| `pdf-processing` | `references/FORMS.md` | `skill://pdf-processing/references/FORMS.md` |
-| `acme/billing/refunds` | `SKILL.md` | `skill://acme/billing/refunds/SKILL.md` |
+| 技能路径               | 文件                  | 资源 URI                                     |
+| ---------------------- | --------------------- | -------------------------------------------- |
+| `git-workflow`         | `SKILL.md`            | `skill://git-workflow/SKILL.md`              |
+| `pdf-processing`       | `references/FORMS.md` | `skill://pdf-processing/references/FORMS.md` |
+| `acme/billing/refunds` | `SKILL.md`            | `skill://acme/billing/refunds/SKILL.md`      |
 
 元数据映射：
 
@@ -283,20 +282,19 @@ skills:
   - skill://review-conventions/SKILL.md
 maxTurns: 12
 ---
-
 你是代码审查 subagent。按严重程度报告可验证的问题，不修改文件。
 ```
 
-| 字段 | 类型 | 必填 | MCP Agents v1 语义 |
-| --- | --- | --- | --- |
-| `name` | string | yes | server 内可发现名称；与 URI 的 `{agentName}` 一致 |
-| `description` | string | yes | Discovery / 自动委派的唯一选择依据，写清何时使用 |
-| `tools` | string[] | no | 请求的工具 allowlist；省略表示不额外缩小宿主默认集合，不表示继承全部工具 |
-| `disallowedTools` | string[] | no | 请求的工具 denylist；与 `tools` 同时存在时 deny 优先 |
-| `model` | string | no | 建议模型（如 `inherit`、宿主支持的 alias 或完整 ID）；宿主 MAY 替换或拒绝 |
-| `skills` | string[] | no | 建议预加载的 Skill URI；每项独立发现、校验与批准，不因 Agent 激活而自动可信 |
-| `maxTurns` | positive integer | no | 建议最大 agentic turn 数；宿主 MAY 进一步收紧 |
-| `metadata` | object | no | 扩展元数据；`io.mcpp/` 字段仅可使用本文登记项 |
+| 字段              | 类型             | 必填 | MCP Agents v1 语义                                                          |
+| ----------------- | ---------------- | ---- | --------------------------------------------------------------------------- |
+| `name`            | string           | yes  | server 内可发现名称；与 URI 的 `{agentName}` 一致                           |
+| `description`     | string           | yes  | Discovery / 自动委派的唯一选择依据，写清何时使用                            |
+| `tools`           | string[]         | no   | 请求的工具 allowlist；省略表示不额外缩小宿主默认集合，不表示继承全部工具    |
+| `disallowedTools` | string[]         | no   | 请求的工具 denylist；与 `tools` 同时存在时 deny 优先                        |
+| `model`           | string           | no   | 建议模型（如 `inherit`、宿主支持的 alias 或完整 ID）；宿主 MAY 替换或拒绝   |
+| `skills`          | string[]         | no   | 建议预加载的 Skill URI；每项独立发现、校验与批准，不因 Agent 激活而自动可信 |
+| `maxTurns`        | positive integer | no   | 建议最大 agentic turn 数；宿主 MAY 进一步收紧                               |
+| `metadata`        | object           | no   | 扩展元数据；`io.mcpp/` 字段仅可使用本文登记项                               |
 
 为保持跨宿主互操作，v1 只标准化上表字段。Claude Code 等宿主的 `permissionMode`、`mcpServers`、`hooks`、`memory`、`background`、`effort`、`isolation`、`color`、`initialPrompt` 等本地字段具有执行、持久化或宿主 UI 语义：server MAY 透传，但通用 MCPP Host **MUST ignore by default**，MUST NOT 因未知字段拒载。宿主若选择支持其中任一字段，MUST 以自有策略显式声明并执行本节权限收敛与 10.3 批准规则；尤其不得由远端配置新增 MCP server、安装 hook、启用持久 memory、切换 bypass 类权限模式或扩大文件系统边界。
 

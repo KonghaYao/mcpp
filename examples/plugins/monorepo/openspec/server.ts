@@ -15,18 +15,18 @@ import { ResourceForSkills } from "@peri-code/mcpp";
 
 /** 构造 openspec 子 server；skillsDir 指向与 server 同级的 skills/ 目录。 */
 export function createOpenspecServer(): McpServer {
-    const server = new McpServer(
-        { name: "openspec-recipes", version: "1.0.0" },
-        {
-            instructions:
-                "Exposes OpenSpec workflow skills (openspec-*) as resources. " +
-                "Read skill://{skillName}/SKILL.md to load the workflow.",
-        },
-    );
+  const server = new McpServer(
+    { name: "openspec-recipes", version: "1.0.0" },
+    {
+      instructions:
+        "Exposes OpenSpec workflow skills (openspec-*) as resources. " +
+        "Read skill://{skillName}/SKILL.md to load the workflow.",
+    },
+  );
 
-    ResourceForSkills(server, {
-        skillsDir: resolve(import.meta.dir, "skills"),
-    });
+  ResourceForSkills(server, {
+    skillsDir: resolve(import.meta.dir, "skills"),
+  });
 
-    return server;
+  return server;
 }

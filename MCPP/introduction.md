@@ -2,7 +2,6 @@
 
 [文档库首页](index.md) · [下一篇：核心模型](core-model.md)
 
-
 ## 1.1 什么是 MCPP
 
 MCP（Model Context Protocol）解决了「如何在客户端与服务器之间传递能力」的问题：定义工具、资源、提示词的传输格式与调用方法。但 MCP 规范本身**不关心 Agent 如何使用这些能力**——何时加载一个 skill、按什么顺序编排多个 skill、依据什么缓存工具目录、如何信任远端下发的指令内容，这些决策属于 Agent 层。
@@ -100,32 +99,32 @@ MCPP 文档凡涉及上述内容，只引用到 MCP 规范条目，不复述其�
 
 ## 1.5 参考文件
 
-| 文件 | 用途 |
-| --- | --- |
-| [MCP 2026-07-28 规范](https://modelcontextprotocol.io/specification/2026-07-28) | 传输、方法、字段的权威定义 |
-| [MCP 2026-07-28 · Resources](https://modelcontextprotocol.io/specification/2026-07-28/server/resources.md) | 资源原语 |
-| [MCP 2026-07-28 · Tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md) | 工具原语 |
-| [MCP 2026-07-28 · Subscriptions](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions) | `subscriptions/listen`、订阅过滤、确认、取消与通知关联 |
-| [MCP 2026-07-28 · Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http) | 长期 POST response SSE 与现代无会话传输语义 |
-| [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/experimental-ext-skills/blob/main/docs/sep-draft-skills-extension.md) | Skills 传输绑定（Draft）；MCPP 以其为基线并对齐演进 |
-| [Agent Skills 规范](https://agentskills.io/specification) | SKILL.md 内容格式、frontmatter 与渐进式披露 |
-| [Agent Plugins · Manifest](https://agent-plugins.org/plugin-authors/manifest) | 插件清单 plugin.json 的字段与约束 |
-| [Agent Plugins · MCP servers](https://agent-plugins.org/plugin-authors/mcp-servers) | mcp.json 承载声明与传输约定 |
-| [Agent Plugins · Skills](https://agent-plugins.org/plugin-authors/skills) | skills/ 目录布局与失败隔离 |
-| [npm registry 文档](https://docs.npmjs.com/cli/v10/using-npm/registry) | MCP R 直接采用的包管理、版本、下载与权限语义；MCPP Store / MCP JSON 生成见 [`MCP_REGISTRY.md`](../MCP_REGISTRY.md) |
-| 本仓库 [`examples/plugins/monorepo`](../examples/plugins/monorepo) | 参考实现（聚合出口 + skill:// 自动挂载 + CF 部署） |
+| 文件                                                                                                                                      | 用途                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [MCP 2026-07-28 规范](https://modelcontextprotocol.io/specification/2026-07-28)                                                           | 传输、方法、字段的权威定义                                                                                         |
+| [MCP 2026-07-28 · Resources](https://modelcontextprotocol.io/specification/2026-07-28/server/resources.md)                                | 资源原语                                                                                                           |
+| [MCP 2026-07-28 · Tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools.md)                                        | 工具原语                                                                                                           |
+| [MCP 2026-07-28 · Subscriptions](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions)                   | `subscriptions/listen`、订阅过滤、确认、取消与通知关联                                                             |
+| [MCP 2026-07-28 · Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)             | 长期 POST response SSE 与现代无会话传输语义                                                                        |
+| [SEP-2640 Skills Extension](https://github.com/modelcontextprotocol/experimental-ext-skills/blob/main/docs/sep-draft-skills-extension.md) | Skills 传输绑定（Draft）；MCPP 以其为基线并对齐演进                                                                |
+| [Agent Skills 规范](https://agentskills.io/specification)                                                                                 | SKILL.md 内容格式、frontmatter 与渐进式披露                                                                        |
+| [Agent Plugins · Manifest](https://agent-plugins.org/plugin-authors/manifest)                                                             | 插件清单 plugin.json 的字段与约束                                                                                  |
+| [Agent Plugins · MCP servers](https://agent-plugins.org/plugin-authors/mcp-servers)                                                       | mcp.json 承载声明与传输约定                                                                                        |
+| [Agent Plugins · Skills](https://agent-plugins.org/plugin-authors/skills)                                                                 | skills/ 目录布局与失败隔离                                                                                         |
+| [npm registry 文档](https://docs.npmjs.com/cli/v10/using-npm/registry)                                                                    | MCP R 直接采用的包管理、版本、下载与权限语义；MCPP Store / MCP JSON 生成见 [`MCP_REGISTRY.md`](../MCP_REGISTRY.md) |
+| 本仓库 [`examples/plugins/monorepo`](../examples/plugins/monorepo)                                                                        | 参考实现（聚合出口 + skill:// 自动挂载 + CF 部署）                                                                 |
 
 ## 1.6 分工边界：谁定义什么
 
 MCPP 的价值在于把 **Agent 层交互的协议契约**标准化，而非替各层重复造轮子。规范中每一项要求都必须能对号入座：**凡已有规范覆盖的内容，MCPP 只引用、不重述；凡属宿主内部实现的决策，MCPP 只指出存在性与底线、不规定实现策略**。
 
-| 层次 | 负责什么 | 本规范的处理 |
-| --- | --- | --- |
-| **MCP 2026-07-28** | 传输、JSON-RPC、无状态 / MRTR、认证、缓存字段（`ttlMs` / `cacheScope`）、工具 / 资源 / 提示词的线级格式 | 一律引用官方规范（1.2），不重述动作细节 |
-| **Agent Skills 规范** | `SKILL.md` 内容格式、frontmatter 字段、渐进式披露概念 | 格式委托（5.1）；披露概念引用 2.3 |
-| **Agent Plugins** | 插件打包布局、`plugin.json` / `mcp.json` schema、schema 校验、失败隔离 | 第 3 章定义「MCP server 承载执行」的衔接契约；第 4 章引用独立 Registry 设计；schema 细节引用 agent-plugins.org，安装/更新机制属宿主 |
-| **Agent 宿主（Host）** | 消歧策略、注入集选择、上下文预算算法、缓存管理算法、命令 UI 呈现、审计存储等**实现决策** | 指出问题存在与协议底线（如 2.5「不得不静默遮蔽」），**实现策略明确标注属 Agent 层**，不得作为 MUST 规定 |
-| **MCPP（本文档）** | Agent 层交互的协议级契约：能力身份（origin）、Skill 传递与编排字段、发现 / 使用策略的约束、扩展协商、安全底线、一致性要求 | 本文档 |
+| 层次                   | 负责什么                                                                                                                  | 本规范的处理                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **MCP 2026-07-28**     | 传输、JSON-RPC、无状态 / MRTR、认证、缓存字段（`ttlMs` / `cacheScope`）、工具 / 资源 / 提示词的线级格式                   | 一律引用官方规范（1.2），不重述动作细节                                                                                             |
+| **Agent Skills 规范**  | `SKILL.md` 内容格式、frontmatter 字段、渐进式披露概念                                                                     | 格式委托（5.1）；披露概念引用 2.3                                                                                                   |
+| **Agent Plugins**      | 插件打包布局、`plugin.json` / `mcp.json` schema、schema 校验、失败隔离                                                    | 第 3 章定义「MCP server 承载执行」的衔接契约；第 4 章引用独立 Registry 设计；schema 细节引用 agent-plugins.org，安装/更新机制属宿主 |
+| **Agent 宿主（Host）** | 消歧策略、注入集选择、上下文预算算法、缓存管理算法、命令 UI 呈现、审计存储等**实现决策**                                  | 指出问题存在与协议底线（如 2.5「不得不静默遮蔽」），**实现策略明确标注属 Agent 层**，不得作为 MUST 规定                             |
+| **MCPP（本文档）**     | Agent 层交互的协议级契约：能力身份（origin）、Skill 传递与编排字段、发现 / 使用策略的约束、扩展协商、安全底线、一致性要求 | 本文档                                                                                                                              |
 
 判定原则：**凡能写成「必须对所有对话双方成立」的，属 MCPP；凡能写成「某宿主内部怎么做」的，归 Agent 层**。对 Agent 层实现策略 MCPP 只能以 MAY / 「例如」给出方向性建议。
 

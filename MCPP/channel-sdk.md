@@ -8,10 +8,10 @@
 
 Channel 不是 MCP primitive、extension、capability 或 JSON-RPC method。SDK 核心由两个可独立实现、注册和演进的深模块组成：
 
-| 模块 | 最小公开 Interface | 标准 MCP 映射 |
-| --- | --- | --- |
-| `ResourceChannel<T>` | `send()` | `resources/*`、`subscriptions/listen`、`notifications/resources/updated` |
-| `CommandChannel<I, O>` | `receive()` | `tools/list`、`tools/call` |
+| 模块                   | 最小公开 Interface | 标准 MCP 映射                                                            |
+| ---------------------- | ------------------ | ------------------------------------------------------------------------ |
+| `ResourceChannel<T>`   | `send()`           | `resources/*`、`subscriptions/listen`、`notifications/resources/updated` |
+| `CommandChannel<I, O>` | `receive()`        | `tools/list`、`tools/call`                                               |
 
 `DuplexChannel<Out, In, Result>` 只是应用层组合，不增加事务语义。Tool result 与 Resource event 相互独立；SDK **MUST NOT** 暗示二者原子完成或因果上等价。
 
@@ -36,6 +36,7 @@ MCP Resource Adapter                 MCP Tool Adapter
         │
  Subscription Gateway
 ```
+
 依赖方向固定为 Adapter → Coordinator → Policy / Journal / Ledger port；存储 Adapter **MUST NOT** 依赖 MCP request、transport credential、`TrustedSubject` 或 SDK façade 类型。
 
 ## 绑定身份与 Schema
@@ -47,7 +48,7 @@ type ChannelId = string;
 type BindingId = string;
 type BindingGeneration = string;
 type SchemaDigest = `sha256:${string}`;
-type EventId = string;   // canonical UUIDv7；Server publisher SDK 生成。
+type EventId = string; // canonical UUIDv7；Server publisher SDK 生成。
 type CommandId = string; // canonical UUIDv7；Client SDK 生成，重试时原样复用。
 type JsonSchema202012<T = unknown> = Readonly<Record<string, unknown>>;
 interface McpToolAnnotations {
@@ -90,6 +91,7 @@ interface CommandBindingSpec<I, O> {
   idempotencyHorizonMs: number;
 }
 ```
+
 不变量：
 
 - `bindingId` 在 Server 内稳定唯一；`generation` 标识不可变 wire contract，不是软件版本或隐式协商机制；
@@ -153,6 +155,7 @@ interface ChannelAuthorizationPolicy<T, I> {
   }): Promise<InvokeGrant>;
 }
 ```
+
 `audienceKey`、`viewKey` 和 `deduplicationScope` 是 Policy 产生的 opaque partition key，不得包含 token、cookie 或可直接记录的 principal。`deduplicationScope` 必须在整个 idempotency horizon 内对同一副作用权限域稳定，不能因 token refresh、policy epoch 或诊断 pseudonym 轮换而变化；不同租户或主体不得碰撞。若必须迁移 scope，相同 `(bindingId, generation, commandId)` 必须返回 scope conflict，不能按新命令执行。返回任何旧 terminal result 前仍须通过当前授权。授权撤销通过 `policyEpoch`、Grant 到期或 revocation signal 收敛；过期 Grant 不得继续用于 send、read、dispatch 或 handler 启动。
 
 ## ResourceChannel：提交事实与失效调度
@@ -184,6 +187,7 @@ interface ResourceChannel<T> {
   send(request: SendRequest<T>): Promise<CommitReceipt>;
 }
 ```
+
 Receipt 只证明 Resource 事实已经提交，不证明 notification 已送达、Client 已读取或业务已处理。公开 Receipt MUST NOT 返回匹配订阅者数量、在线状态或 sink 队列统计；这些数据不稳定且可能泄露租户活动。
 
 ### Journal、cursor 与 Resource 内容
@@ -206,7 +210,7 @@ type ResourceSnapshot<T> =
       generation: BindingGeneration;
       resourceVersion: string;
       present: boolean;
-      state?: T;          // present=true 时存在；T 自身可以合法为 null。
+      state?: T; // present=true 时存在；T 自身可以合法为 null。
       tombstone?: boolean;
       updatedAt?: string;
     }
@@ -220,6 +224,7 @@ type ResourceSnapshot<T> =
       events: readonly ResourceEvent<T>[];
     };
 ```
+
 - `nextPageUri` 是 Server 生成的分页 Resource URI；Client 只可原样传给下一次 `resources/read`，不得解析或拼接 cursor；每页必须重新授权；
 - URI 内的 opaque cursor 必须绑定 `bindingId + generation + cursorDomain`，不是 capability 或授权凭证，不得含 token、principal 或其他凭据；
 - 多 audience 的授权合并视图必须拥有自己的稳定 cursor domain。禁止把多个 scope 内各自递增的裸 `sequence` 合并后交给一个 cursor；
@@ -242,6 +247,7 @@ BEGIN
   insert invalidation outbox(bindingId, generation, resourceUri, partition)
 COMMIT  ← send() 的事实提交线性化点
 ```
+
 - 存储失败 MUST NOT 产生 updated notification；
 - commit 成功后，outbox dispatcher MUST 最终重新调度失效信号，进程在 commit 后、enqueue 前崩溃不得永久丢失 invalidation；
 - 实现 MAY 使用事务表、CDC、durable broker 或等价机制，但“仅提交后遍历本进程 sink”不满足 durable Profile；
@@ -260,6 +266,7 @@ REQUESTED
   → ACTIVE
   → LAGGED | REVOKED | CANCELLED | CLOSED
 ```
+
 不变量：
 
 1. 固化 filter 与 `ReadGrant` 后，先 attach 有界 sink，并关闭输出 gate；
@@ -306,6 +313,7 @@ type ReceiveHandler<I, O> = (
   context: ExecutionContext,
 ) => Promise<HandlerCompletion<O>>;
 ```
+
 `toolOutputSchema` MUST 描述完整 `CommandOutcome<O>`，不能只描述 `O`。`deduplicated` 由 Coordinator 按本次调用是否命中已有 terminal record 派生，MUST NOT 写入不可变 ledger outcome；首次完成返回 false，重放结果返回 true。映射规则：
 
 - `completed` 与幂等 `in-progress` 是 `isError: false` 的 Tool structured result；
@@ -321,6 +329,7 @@ type ReceiveHandler<I, O> = (
 ```text
 (bindingId, bindingGeneration, InvokeGrant.deduplicationScope, commandId)
 ```
+
 `requestDigest` 使用 RFC 8785 JSON Canonicalization Scheme 对完整 `CommandInput` 规范化，以 UTF-8 编码后计算 SHA-256，并表示为小写 `sha256:{hex}`。所有可能影响 handler 的字段都必须进入 digest；不得依赖语言运行时对象键顺序、默认浮点格式或 Unicode 的偶然序列化行为。SDK MUST 拒绝不能按该 profile 无损规范化的输入，并发布跨语言共享测试向量。
 
 terminal ledger record 必须保留到 `expiresAt = UUIDv7 timestamp + idempotencyHorizonMs`；`now >= expiresAt` 即过期。`commandId` 必须是 Client SDK 生成的 canonical UUIDv7，重试时原样复用；Server 校验 variant、版本、编码和时间戳范围，但它不构成授权凭证。非终态记录不得因容量或年龄 retention 被淘汰。Server 先检查时间：已过期则返回 `idempotency-expired`，在 horizon 内却无记录时才允许视为首次调用；超出允许未来时钟偏差时拒绝为无效输入。接近到期才首次抵达的命令仍可执行，建立 record 后 MUST 至少保留到该次执行取得 terminal outcome；过期拒绝不允许 Host 自动换新 commandId 重放同一业务动作。
@@ -337,6 +346,7 @@ RESERVED -- handler 未开始且 lease 过期 --> 可安全释放并重新占位
 STARTED  -- timeout / cancel / crash --> DELIVERY_UNKNOWN
 DELIVERY_UNKNOWN -- 显式业务 reconciliation --> COMPLETED | FAILED
 ```
+
 最小持久化 port：
 
 ```ts
@@ -389,6 +399,7 @@ interface CommandLedger<O> {
   }): Promise<void>;
 }
 ```
+
 Store Adapter 必须以 CAS / fencing 实现合法转换：`markStarted()` 只有返回 `started` 后才可调用 handler；旧 worker、过期 lease 或已经进入 `DELIVERY_UNKNOWN` 的 handler 不能覆盖新状态。STARTED record 必须持久保存 `ownerGeneration + executionDeadline` 或等价 owner lease；deadline 到期或 owner 被确认失效后，Ledger 必须最终原子转为 `DELIVERY_UNKNOWN`，具体可由 sweeper、owner monitor 或 recovery worker 完成，但不得转回 RESERVED。unknown 后到达的完成结果只能进入显式 reconciliation 流程。
 
 Command Coordinator 的顺序固定为：
@@ -415,6 +426,7 @@ interface CommandChannel<I, O> {
   receive(handler: ReceiveHandler<I, O>): ReceiveRegistration;
 }
 ```
+
 receiver 唯一性、并发限制和 handler generation 的作用域必须声明为整个 deployment，而不是单个 `ChannelManager` 进程。多实例实现 MAY 使用 leader、lease、共享 Catalog 或一致性路由，但必须保证：
 
 - 同一 binding generation 不会因滚动部署同时执行语义不同的 handler；
@@ -439,6 +451,7 @@ commands.receive(async (input, context) => {
   return { status: "completed", result: result.toolResult };
 });
 ```
+
 该 `send()` 是独立事务：成功提交的 Resource event 不会因 Tool response、ledger finish 或连接随后失败而回滚。`causationId` SHOULD 指向 commandId；事件不能代表 Tool 已成功完成。若业务要求“结果与事件原子提交”，应用必须在自身事务/outbox 中完成，SDK 不得制造跨模块事务假象。
 
 ## 最小 Manager façade 与语言适配
@@ -456,6 +469,7 @@ interface ChannelManager {
   close(deadline: string): Promise<void>;
 }
 ```
+
 这里省略了 Policy、Journal、Ledger、Outbox、Dispatcher 与 runtime policy 的注入形态；它们是实现内部 seam，不属于业务调用 Interface。注册时返回的 typed handle 是唯一恢复静态类型的入口。字符串 lookup 只能返回 erased descriptor；禁止 `manager.channel<CallerChosenType>(id)` 让调用方以任意泛型伪造注册时类型。
 
 Rust enum、Java sealed interface、Go 的独立 outbound/inbound interface、Python Protocol 等都可表达同一行为。TypeScript SDK MAY 额外提供判别联合或 `registerDuplex()` convenience façade，但它们不是跨语言一致性要求，也不得扩大核心 Interface。

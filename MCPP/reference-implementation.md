@@ -2,7 +2,6 @@
 
 [文档库首页](index.md) · [上一篇：一致性要求](conformance.md) · [下一篇：术语](glossary.md)
 
-
 本仓库以两层结构落地 MCPP（即 1.1「项目身份」的实现示例）：
 
 - [`packages/mcpp`](../packages/mcpp)：规范行为即代码的 SDK——skills 扫描/摘要/资源挂载（`ResourceForSkills`，第 3.4 双通道投影参考实现）、双模式启动（stdio + streamable HTTP）、默认 `127.0.0.1:8457`、`createGateway` 聚合与只读 Server Catalog（第 3.7–3.7.1）、`plugin.json`/`mcp.json` 校验。

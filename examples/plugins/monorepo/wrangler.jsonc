@@ -7,10 +7,10 @@
     {
       "type": "Text",
       "globs": ["**/*.html"],
-      "fallthrough": true
-    }
+      "fallthrough": true,
+    },
   ],
   "observability": {
-    "enabled": true
-  }
+    "enabled": true,
+  },
 }

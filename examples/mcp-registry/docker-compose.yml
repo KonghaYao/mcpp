@@ -6,7 +6,13 @@ services:
       - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
       - npm-data:/verdaccio/storage
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4873/-/ping').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4873/-/ping').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 3s
       timeout: 2s
       retries: 20
@@ -24,7 +30,13 @@ services:
     depends_on:
       npm: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 3s
       timeout: 2s
       retries: 20
@@ -45,7 +57,13 @@ services:
       npm: { condition: service_healthy }
       mcp-runner: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 3s
       timeout: 2s
       retries: 20

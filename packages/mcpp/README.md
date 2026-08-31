@@ -6,11 +6,11 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 ## 版本更新
 
-| 版本 | 主要更新 |
-| --- | --- |
+| 版本    | 主要更新                                                                                                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 MCPP Cache（`McppCache`）、TTL、`public` / `private` scope 和 opaque authorization context 隔离；同时支持协商 Server Cache Version（`cacheVersion`），相等时可直接复用 MCPP Response Cache 与 Resource Content Cache，不相等时拒绝旧条目。 |
-| `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。 |
-| `0.3.0` | 支持将 Skill 根内全部经安全校验的普通文件投影为附属 Resource；新增构建期静态 registry，使无本地文件系统的 Worker 可以挂载 Skills。 |
+| `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。                                                                                                                                                       |
+| `0.3.0` | 支持将 Skill 根内全部经安全校验的普通文件投影为附属 Resource；新增构建期静态 registry，使无本地文件系统的 Worker 可以挂载 Skills。                                                                                                                                                               |
 
 升级到 `0.6.5` 时，缓存仅在调用方显式传入 `cache` 后启用。`cacheScope: "private"` 必须同时提供由宿主生成的、不含 token、cookie 或其他凭据的 opaque `authorizationContext`。
 
@@ -85,42 +85,42 @@ metadata:
 ```ts
 import { McpServer } from "@modelcontextprotocol/server";
 import {
-    createCacheVersion,
-    createMcppServerFactory,
-    ResourceForAgents,
-    ResourceForSkills,
-    startServer,
+  createCacheVersion,
+  createMcppServerFactory,
+  ResourceForAgents,
+  ResourceForSkills,
+  startServer,
 } from "@peri-code/mcpp";
 
 const cacheVersion = await createCacheVersion({
-    schemaVersion: "1",
-    skills: bundledSkillMetadata,
-    resourceContentDigests: bundledSkillDigests,
+  schemaVersion: "1",
+  skills: bundledSkillMetadata,
+  resourceContentDigests: bundledSkillDigests,
 });
 
 const createServer = createMcppServerFactory(
-    { cacheVersion },
-    (_request, mcpp) => {
-        const server = new McpServer(
-            {
-                name: "example-mcpp-server",
-                version: "0.1.0",
-            },
-            { capabilities: mcpp.capabilities },
-        );
+  { cacheVersion },
+  (_request, mcpp) => {
+    const server = new McpServer(
+      {
+        name: "example-mcpp-server",
+        version: "0.1.0",
+      },
+      { capabilities: mcpp.capabilities },
+    );
 
-        ResourceForSkills(server, {
-            skillsDir: new URL("./skills", import.meta.url).pathname,
-            origin: "example-mcpp-server",
-            ...mcpp.resourceCache,
-        });
-        ResourceForAgents(server, {
-            agentsDir: new URL("./agents", import.meta.url).pathname,
-            origin: "example-mcpp-server",
-            ...mcpp.resourceCache,
-        });
-        return server;
-    },
+    ResourceForSkills(server, {
+      skillsDir: new URL("./skills", import.meta.url).pathname,
+      origin: "example-mcpp-server",
+      ...mcpp.resourceCache,
+    });
+    ResourceForAgents(server, {
+      agentsDir: new URL("./agents", import.meta.url).pathname,
+      origin: "example-mcpp-server",
+      ...mcpp.resourceCache,
+    });
+    return server;
+  },
 );
 
 const started = await startServer(createServer);
@@ -132,9 +132,9 @@ const started = await startServer(createServer);
 
 ```ts
 await startServer(createServer, {
-    mode: "http",
-    host: "127.0.0.1",
-    port: 9000,
+  mode: "http",
+  host: "127.0.0.1",
+  port: 9000,
 });
 ```
 
@@ -180,8 +180,8 @@ started.subscriptions?.resourceUpdated("skill://code-review/SKILL.md");
 
 ```ts
 ResourceForAgents(server, {
-    agentsDir: "/absolute/path/to/agents",
-    organizationPrefix: "example.org",
+  agentsDir: "/absolute/path/to/agents",
+  organizationPrefix: "example.org",
 });
 ```
 
@@ -195,8 +195,8 @@ ResourceForAgents(server, {
 
 ```ts
 ResourceForSkills(server, {
-    skillsDir: "/absolute/path/to/skills",
-    namePrefix: "project",
+  skillsDir: "/absolute/path/to/skills",
+  namePrefix: "project",
 });
 ```
 
@@ -216,12 +216,12 @@ skill://code-review/templates/report.json
 
 ```ts
 ResourceForSkills(server, {
-    skillsDir: "/absolute/path/to/skills",
-    resourceLimits: {
-        maxFileBytes: 512 * 1024,
-        maxSkillBytes: 4 * 1024 * 1024,
-        maxSkillFiles: 64,
-    },
+  skillsDir: "/absolute/path/to/skills",
+  resourceLimits: {
+    maxFileBytes: 512 * 1024,
+    maxSkillBytes: 4 * 1024 * 1024,
+    maxSkillFiles: 64,
+  },
 });
 ```
 
@@ -241,14 +241,14 @@ Worker 没有可用的本地文件系统时，不能使用 `ResourceForSkills` �
 // scripts/generate-skills-registry.ts（构建阶段）
 import { writeFile } from "node:fs/promises";
 import {
-    buildStaticSkillResources,
-    renderStaticSkillResourcesModule,
+  buildStaticSkillResources,
+  renderStaticSkillResourcesModule,
 } from "@peri-code/mcpp/skills/build";
 
 const resources = await buildStaticSkillResources("./skills");
 await writeFile(
-    "./src/static-skills.generated.ts",
-    renderStaticSkillResourcesModule(resources),
+  "./src/static-skills.generated.ts",
+  renderStaticSkillResourcesModule(resources),
 );
 ```
 
@@ -262,10 +262,10 @@ import { STATIC_SKILL_RESOURCES } from "./static-skills.generated.ts";
 const cache = new McppCache();
 
 ResourceForStaticSkills(server, {
-    resources: STATIC_SKILL_RESOURCES,
-    cache,
-    origin: "example-static-skills",
-    ttlMs: 30_000,
+  resources: STATIC_SKILL_RESOURCES,
+  cache,
+  origin: "example-static-skills",
+  ttlMs: 30_000,
 });
 ```
 
@@ -281,11 +281,11 @@ ResourceForStaticSkills(server, {
 import { scanSkillsDir } from "@peri-code/mcpp/skills";
 
 const skills = await scanSkillsDir("./skills", {
-    withDigest: true,
+  withDigest: true,
 });
 
 for (const skill of skills) {
-    console.log(skill.name, skill.uri, skill.digest);
+  console.log(skill.name, skill.uri, skill.digest);
 }
 ```
 
@@ -310,25 +310,25 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { createGateway } from "@peri-code/mcpp/gateway";
 
 function createProjectServer() {
-    return new McpServer({
-        name: "project",
-        version: "0.1.0",
-    });
+  return new McpServer({
+    name: "project",
+    version: "0.1.0",
+  });
 }
 
 function createReviewServer() {
-    return new McpServer({
-        name: "review",
-        version: "0.1.0",
-    });
+  return new McpServer({
+    name: "review",
+    version: "0.1.0",
+  });
 }
 
 const gateway = await createGateway(
-    [
-        { path: "/project/mcp", createServer: createProjectServer },
-        { path: "/review/mcp", createServer: createReviewServer },
-    ],
-    { host: "127.0.0.1", port: 8457 },
+  [
+    { path: "/project/mcp", createServer: createProjectServer },
+    { path: "/review/mcp", createServer: createReviewServer },
+  ],
+  { host: "127.0.0.1", port: 8457 },
 );
 
 console.log(gateway.url);
@@ -360,17 +360,14 @@ Catalog 的 `list` / `resolve`，并在用户选择后直接向 Child endpoint �
 `Bun.file`，因此可复用于 Worker。
 
 ```ts
-import {
-    createCatalogPageHandler,
-    createGateway,
-} from "@peri-code/mcpp";
+import { createCatalogPageHandler, createGateway } from "@peri-code/mcpp";
 
 const gateway = await createGateway(routes, {
-    catalog: { path: "/catalog/mcp" },
-    fallback: createCatalogPageHandler({
-        pagePath: "/",
-        catalogPath: "/catalog/mcp",
-    }),
+  catalog: { path: "/catalog/mcp" },
+  fallback: createCatalogPageHandler({
+    pagePath: "/",
+    catalogPath: "/catalog/mcp",
+  }),
 });
 ```
 
@@ -385,13 +382,13 @@ const gateway = await createGateway(routes, {
 import { createGatewayRoutes } from "@peri-code/mcpp/gateway";
 
 const gateway = createGatewayRoutes([
-    { path: "/project/mcp", createServer: createProjectServer },
+  { path: "/project/mcp", createServer: createProjectServer },
 ]);
 
 export default {
-    fetch(request: Request) {
-        return gateway.fetch(request);
-    },
+  fetch(request: Request) {
+    return gateway.fetch(request);
+  },
 };
 ```
 
@@ -405,15 +402,15 @@ export default {
 import { validatePluginJson } from "@peri-code/mcpp/plugin";
 
 const result = validatePluginJson({
-    name: "example-plugin",
-    version: "1.0.0",
-    description: "Example MCPP plugin",
+  name: "example-plugin",
+  version: "1.0.0",
+  description: "Example MCPP plugin",
 });
 
 if (!result.ok) {
-    console.error(result.errors);
+  console.error(result.errors);
 } else {
-    console.log(result.value);
+  console.log(result.value);
 }
 ```
 
@@ -427,13 +424,13 @@ stdio Server：
 import { validateMcpJson } from "@peri-code/mcpp/plugin";
 
 const result = validateMcpJson({
-    mcpServers: {
-        example: {
-            type: "stdio",
-            command: "bun",
-            args: ["run", "server.ts", "--stdio"],
-        },
+  mcpServers: {
+    example: {
+      type: "stdio",
+      command: "bun",
+      args: ["run", "server.ts", "--stdio"],
     },
+  },
 });
 ```
 
@@ -441,12 +438,12 @@ Streamable HTTP Server：
 
 ```ts
 const result = validateMcpJson({
-    mcpServers: {
-        example: {
-            type: "streamable-http",
-            url: "http://127.0.0.1:8457/mcp",
-        },
+  mcpServers: {
+    example: {
+      type: "streamable-http",
+      url: "http://127.0.0.1:8457/mcp",
     },
+  },
 });
 ```
 
@@ -460,16 +457,16 @@ const result = validateMcpJson({
 
 ## 导出入口
 
-| 入口 | 内容 |
-| --- | --- |
-| `@peri-code/mcpp` | 全部公开 API |
-| `@peri-code/mcpp/skills` | Skills 扫描、前端元数据、URI、digest、受限 Resource 挂载与纯公开策略 |
-| `@peri-code/mcpp/skills/static` | Worker 的构建期静态 Skill Resource 挂载 |
-| `@peri-code/mcpp/skills/build` | 仅构建阶段使用的静态 registry 收集与源码生成 |
-| `@peri-code/mcpp/server` | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型 |
-| `@peri-code/mcpp/catalog` | 只读 Server Catalog 类型、扩展标识、实现与 Catalog 页面 helper |
-| `@peri-code/mcpp/gateway` | HTTP gateway 与 serverless routes |
-| `@peri-code/mcpp/plugin` | `plugin.json`、`mcp.json` schema 与校验函数 |
+| 入口                            | 内容                                                                 |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `@peri-code/mcpp`               | 全部公开 API                                                         |
+| `@peri-code/mcpp/skills`        | Skills 扫描、前端元数据、URI、digest、受限 Resource 挂载与纯公开策略 |
+| `@peri-code/mcpp/skills/static` | Worker 的构建期静态 Skill Resource 挂载                              |
+| `@peri-code/mcpp/skills/build`  | 仅构建阶段使用的静态 registry 收集与源码生成                         |
+| `@peri-code/mcpp/server`        | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型                |
+| `@peri-code/mcpp/catalog`       | 只读 Server Catalog 类型、扩展标识、实现与 Catalog 页面 helper       |
+| `@peri-code/mcpp/gateway`       | HTTP gateway 与 serverless routes                                    |
+| `@peri-code/mcpp/plugin`        | `plugin.json`、`mcp.json` schema 与校验函数                          |
 
 ## 开发
 

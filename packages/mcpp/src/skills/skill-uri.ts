@@ -8,26 +8,26 @@
 import { SKILL_URI_TEMPLATE } from "../types.ts";
 
 export interface ParsedSkillUri {
-    /** 完整 uri（原样）。 */
-    uri: string;
-    /** 前缀部分（skill:// 与 skill 名之间的段，可为空）。 */
-    prefix: string;
-    /** skill 名（skill:// 后的第一个段）。 */
-    skillName: string;
-    /** skill 根之后的相对路径（"" 表示根或未提供路径）。 */
-    path: string;
+  /** 完整 uri（原样）。 */
+  uri: string;
+  /** 前缀部分（skill:// 与 skill 名之间的段，可为空）。 */
+  prefix: string;
+  /** skill 名（skill:// 后的第一个段）。 */
+  skillName: string;
+  /** skill 根之后的相对路径（"" 表示根或未提供路径）。 */
+  path: string;
 }
 
 /** 构造单段 SKILL.md 的恒寻址 URI。 */
 export function skillUri(skillName: string): string {
-    return `skill://${skillName}/SKILL.md`;
+  return `skill://${skillName}/SKILL.md`;
 }
 
 /** 构造带嵌套路径的 skill 资源 URI（skill program 引用 references/scripts 等）。 */
 export function skillFileUri(skillName: string, path: string): string {
-    const clean = path.replace(/^\/+/, "");
-    if (!clean) return skillUri(skillName);
-    return `skill://${skillName}/${clean.split("/").map(encodeURIComponent).join("/")}`;
+  const clean = path.replace(/^\/+/, "");
+  if (!clean) return skillUri(skillName);
+  return `skill://${skillName}/${clean.split("/").map(encodeURIComponent).join("/")}`;
 }
 
 /**
@@ -35,32 +35,32 @@ export function skillFileUri(skillName: string, path: string): string {
  * `/`、`\\`、隐藏段与路径穿越，避免把 URI 数据解释为宿主文件系统路径。
  */
 export function decodeSkillFilePath(path: string): string | undefined {
-    if (!path || path.includes("\\") || path.includes("\0")) return undefined;
+  if (!path || path.includes("\\") || path.includes("\0")) return undefined;
 
-    const segments: string[] = [];
-    for (const encoded of path.split("/")) {
-        if (!encoded) return undefined;
-        let segment: string;
-        try {
-            segment = decodeURIComponent(encoded);
-        } catch {
-            return undefined;
-        }
-        if (
-            !segment ||
-            segment === "." ||
-            segment === ".." ||
-            segment === "node_modules" ||
-            segment.startsWith(".") ||
-            segment.includes("/") ||
-            segment.includes("\\") ||
-            segment.includes("\0")
-        ) {
-            return undefined;
-        }
-        segments.push(segment);
+  const segments: string[] = [];
+  for (const encoded of path.split("/")) {
+    if (!encoded) return undefined;
+    let segment: string;
+    try {
+      segment = decodeURIComponent(encoded);
+    } catch {
+      return undefined;
     }
-    return segments.join("/");
+    if (
+      !segment ||
+      segment === "." ||
+      segment === ".." ||
+      segment === "node_modules" ||
+      segment.startsWith(".") ||
+      segment.includes("/") ||
+      segment.includes("\\") ||
+      segment.includes("\0")
+    ) {
+      return undefined;
+    }
+    segments.push(segment);
+  }
+  return segments.join("/");
 }
 
 /**
@@ -68,20 +68,20 @@ export function decodeSkillFilePath(path: string): string | undefined {
  * 仅按结构解析；拒绝 scheme 不符或缺少 skill 名的输入（返回 undefined）。
  */
 export function parseSkillUri(uri: string): ParsedSkillUri | undefined {
-    const m = /^skill:\/\/([^/]+)(?:\/(.*))?$/.exec(uri);
-    if (!m) return undefined;
-    const skillName = m[1] ?? "";
-    const rest = m[2] ?? "";
-    if (!skillName) return undefined;
-    const prefix = "";
-    const path = rest;
-    return { uri, prefix, skillName, path };
+  const m = /^skill:\/\/([^/]+)(?:\/(.*))?$/.exec(uri);
+  if (!m) return undefined;
+  const skillName = m[1] ?? "";
+  const rest = m[2] ?? "";
+  if (!skillName) return undefined;
+  const prefix = "";
+  const path = rest;
+  return { uri, prefix, skillName, path };
 }
 
 /** resource 模板变量提取：单段模板匹配到 string，多段可能为 string[]。 */
 export function firstTemplateVar(value: string | string[] | undefined): string {
-    if (Array.isArray(value)) return value[0] ?? "";
-    return value ?? "";
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 }
 
 /** SKILL_URI_TEMPLATE 元信息（供 README / 文档引用）。 */

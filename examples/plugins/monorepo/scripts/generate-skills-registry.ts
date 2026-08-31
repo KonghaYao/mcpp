@@ -3,12 +3,17 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-    buildStaticSkillResources,
-    renderStaticSkillResourcesModule,
+  buildStaticSkillResources,
+  renderStaticSkillResourcesModule,
 } from "@peri-code/mcpp/skills/build";
 
 const skillsDir = resolve(import.meta.dir, "..", "openspec", "skills");
-const output = resolve(import.meta.dir, "..", "openspec", "static-skills.generated.ts");
+const output = resolve(
+  import.meta.dir,
+  "..",
+  "openspec",
+  "static-skills.generated.ts",
+);
 const resources = await buildStaticSkillResources(skillsDir);
 await writeFile(output, renderStaticSkillResourcesModule(resources));
 console.log(`Generated ${resources.length} static Skill resources: ${output}`);

@@ -4,7 +4,6 @@
 
 相关模块：[MCP Mono Server](mcp-mono-server.md) · [MCP Skills 与 Agents](mcp-skills.md)
 
-
 MCPP 的实现即是一个 **标准的 Agent Plugin**（[agent-plugins.org](https://agent-plugins.org) 规范 1.0.0）：`plugin.json` 声明身份与元数据、`skills/` 打包技能、`mcp.json` 声明 MCP server 作为**执行承载**。MCPP 以这一可移植形态作为标准部署单元，本章规定其布局、约束与 Agent 侧加载顺序，以及它们与 [MCP Skills](mcp-skills.md) 和 [MCP Tools](mcp-tools.md) 的衔接关系。
 
 ## 3.1 插件形态
@@ -21,10 +20,10 @@ MCPP 的实现即是一个 **标准的 Agent Plugin**（[agent-plugins.org](http
 
 MCPP 视角下的职责划分：
 
-| 组件 | 角色 | 生命周期 |
-| --- | --- | --- |
-| `plugin.json` | **静态契约**：插件身份、元数据、规格版本 | 安装/启用时校验一次 |
-| `skills/` | **打包技能**：开箱即用的本地技能（filesystem origin） | 安装时即存在，随插件版本演化 |
+| 组件                     | 角色                                                                   | 生命周期                        |
+| ------------------------ | ---------------------------------------------------------------------- | ------------------------------- |
+| `plugin.json`            | **静态契约**：插件身份、元数据、规格版本                               | 安装/启用时校验一次             |
+| `skills/`                | **打包技能**：开箱即用的本地技能（filesystem origin）                  | 安装时即存在，随插件版本演化    |
 | `mcp.json` 声明的 server | **运行时承载**：tools、resources、`skill://` 技能、MRTR 交互等动态能力 | 客户端按需启动/连接，运行时发现 |
 
 一个 MCPP server 项目的可执行入口（stdio 或 streamable HTTP）就是 `mcp.json` 中 `command`/`url` 所指的目标；插件的动态能力全部经由该 server 以 MCP 2026-07-28 语义提供。
@@ -53,15 +52,15 @@ flowchart LR
 }
 ```
 
-| 字段 | 必填 | 语义 |
-| --- | --- | --- |
-| `$schema` | 是 | 选择校验与解释契约（插件必须声明规范 schema 标识） |
-| `name` | 是 | 插件名与包标识（约束见下） |
-| `version` | 否 | 插件版本，RECOMMENDED 使用 SemVer |
-| `description` | 否 | 插件简介 |
-| `author` | 否 | 对象：`name` / `email` / `url` |
-| `homepage` / `repository` / `license` / `keywords` | 否 | 文档、仓库、SPDX 许可证、检索关键词 |
-| `extensions` | 否 | 客户端私有数据，按 reverse-domain 命名空间组织 |
+| 字段                                               | 必填 | 语义                                               |
+| -------------------------------------------------- | ---- | -------------------------------------------------- |
+| `$schema`                                          | 是   | 选择校验与解释契约（插件必须声明规范 schema 标识） |
+| `name`                                             | 是   | 插件名与包标识（约束见下）                         |
+| `version`                                          | 否   | 插件版本，RECOMMENDED 使用 SemVer                  |
+| `description`                                      | 否   | 插件简介                                           |
+| `author`                                           | 否   | 对象：`name` / `email` / `url`                     |
+| `homepage` / `repository` / `license` / `keywords` | 否   | 文档、仓库、SPDX 许可证、检索关键词                |
+| `extensions`                                       | 否   | 客户端私有数据，按 reverse-domain 命名空间组织     |
 
 约束（MCPP 重申为规范性要求）：
 
@@ -107,10 +106,10 @@ MCPP 附加要求：
 
 插件内的技能存在**两条分发通道**：
 
-| 通道 | 载体 | origin | 特性 |
-| --- | --- | --- | --- |
-| A 打包通道（静态） | `skills/` 直接子目录（每个含 `SKILL.md`） | 插件自身（filesystem） | 离线可用、随插件版本化、安装即发现 |
-| B 运行通道（动态） | MCP server 的 `skill://` 资源 / skills 扩展（第 5 章） | 承载 server | 动态更新、可编排、支持远程 server |
+| 通道               | 载体                                                   | origin                 | 特性                               |
+| ------------------ | ------------------------------------------------------ | ---------------------- | ---------------------------------- |
+| A 打包通道（静态） | `skills/` 直接子目录（每个含 `SKILL.md`）              | 插件自身（filesystem） | 离线可用、随插件版本化、安装即发现 |
+| B 运行通道（动态） | MCP server 的 `skill://` 资源 / skills 扩展（第 5 章） | 承载 server            | 动态更新、可编排、支持远程 server  |
 
 ```mermaid
 flowchart TB

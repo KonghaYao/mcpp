@@ -4,7 +4,6 @@
 
 Registry 与 Dynamic Host 的完整权威设计见 [`MCP_REGISTRY.md`](../MCP_REGISTRY.md)。
 
-
 一个 MCPP server 项目可以是 **MCP Mono Server（monorepo 聚合形态）**：**单一 HTTP server 进程**（唯一对外开放的端口）托管**多个 MCP endpoint**，以 **URL 路径路由**分发——`/xxx/mcp` 是子 server xxx 的 MCP 端点，`/yyy/mcp` 是子 server yyy 的 MCP 端点。客户端按路径（URL）连接对应的子 server，各自独立协商。
 
 ```mermaid
@@ -51,11 +50,11 @@ flowchart LR
 
 **静态条目与方法**：一个 Catalog entry 至少包含稳定 `id`、`title`、`description`、`version`、可选 `tags` / 能力摘要 / `auth.required` 与 content-bound 的 `entryDigest`。其仅描述可连接服务，不是 Tool、Resource 或 Skill 的权威事实；完整能力必须在连接 Child endpoint 后通过标准 MCP 方法重新发现。
 
-| 方法 | 输入 | 输出与副作用 |
-| --- | --- | --- |
-| `mcpp/servers/list` | 可选 `cursor`、`query`、`tags`、`capabilities` | 轻量 Catalog entry 分页；只读、无副作用 |
-| `mcpp/servers/get` | `serverId` | 单个 Catalog entry；未知 ID 返回 `-32602` |
-| `mcpp/servers/resolve` | `serverId`、用户已审阅的 `entryDigest` | `{ transport: "streamable-http", endpointPath }` 与授权前置条件；摘要变化 MUST 拒绝，要求刷新与重新批准；只读、无副作用 |
+| 方法                   | 输入                                           | 输出与副作用                                                                                                            |
+| ---------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `mcpp/servers/list`    | 可选 `cursor`、`query`、`tags`、`capabilities` | 轻量 Catalog entry 分页；只读、无副作用                                                                                 |
+| `mcpp/servers/get`     | `serverId`                                     | 单个 Catalog entry；未知 ID 返回 `-32602`                                                                               |
+| `mcpp/servers/resolve` | `serverId`、用户已审阅的 `entryDigest`         | `{ transport: "streamable-http", endpointPath }` 与授权前置条件；摘要变化 MUST 拒绝，要求刷新与重新批准；只读、无副作用 |
 
 **endpoint 解析与 Agent 装配**：Catalog MUST 仅返回以 `/` 开头的 `endpointPath`，不得含 scheme、authority、userinfo、query、fragment、`.` 或 `..` 段。Agent MUST 将它解析到 Catalog 的同一 scheme / host / port，MUST NOT 因 Catalog 条目自动跨 origin 重定向或携带凭据。用户明确选择条目后，Agent 以 `entryDigest` 调 `resolve`，验证路径，再创建本地 connection binding 并独立 initialize Child endpoint；后者构成新 origin，适用第 2.4、5–10 章的全部发现、缓存、批准与隔离规则。
 

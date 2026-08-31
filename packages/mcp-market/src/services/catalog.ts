@@ -1,6 +1,184 @@
-import type { Db } from "../db/database.ts";import { id,immediate,now } from "../db/database.ts";import { assert,AppError } from "../errors.ts";import * as v from "../validation.ts";
-const parse=(x:string|null)=>x===null?null:JSON.parse(x);
-export function ownedItem(db:Db,slug:string,publisherId:string){const x=db.query("SELECT i.*,b.status backend_status FROM mcp_items i JOIN backend_registries b ON b.id=i.backend_registry_id WHERE i.slug=? AND i.publisher_id=?").get(slug,publisherId) as any;assert(x,404,"ITEM_NOT_FOUND");return x}
-export function createItem(db:Db,publisherId:string,b:any,requestId:string){b=v.bodyObject(b);const revision=v.bodyObject(b.revision);const slug=v.globalSlug(b.slug),backend=v.globalSlug(b.backend),displayName=v.text(b.displayName,"displayName",200,true)!,version=v.exactSemver(revision.version),locator=v.backendLocator(revision.backendLocator),definition=v.serverDefinition(revision.serverDefinition),schema=v.envSchema(revision.envSchema);const itemId=id(),revisionId=id(),t=now();return immediate(db,()=>{const p=db.query("SELECT status FROM publishers WHERE id=?").get(publisherId) as any;assert(p?.status==="active",403,"PUBLISHER_SUSPENDED");const br=db.query("SELECT id,status FROM backend_registries WHERE slug=?").get(backend) as any;assert(br,422,"BACKEND_NOT_FOUND");assert(br.status==="active",409,"BACKEND_DISABLED");try{db.query("INSERT INTO mcp_items(id,slug,publisher_id,backend_registry_id,display_name,summary,description,homepage_url,repository_url,icon_url,tags_json,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)").run(itemId,slug,publisherId,br.id,displayName,v.text(b.summary,"summary",500),v.text(b.description,"description",10000),v.displayUrl(b.homepageUrl),v.displayUrl(b.repositoryUrl),v.displayUrl(b.iconUrl),JSON.stringify(v.tags(b.tags??[])),t,t);db.query("INSERT INTO mcp_item_revisions(id,item_id,version,backend_locator_json,server_definition_json,env_schema_json,status,submitted_by,submitted_at,created_at) VALUES(?,?,?,?,?,?,'pending',?,?,?)").run(revisionId,itemId,version,JSON.stringify(locator),JSON.stringify(definition),schema===null?null:JSON.stringify(schema),publisherId,t,t)}catch(e:any){if(String(e).includes("UNIQUE"))throw new AppError(409,"ITEM_OR_VERSION_EXISTS");throw e}db.query("INSERT INTO audit_logs VALUES(?,?,?,?,?,?,?,?,?)").run(id(),"item.create","publisher",publisherId,"item",itemId,requestId,"{}",t);return{slug,status:"pending",revision:{version,status:"pending"},latestVersion:null}})}
-export function publishRevision(db:Db,item:any,b:any,publisherId:string,requestId:string){b=v.bodyObject(b);const version=v.exactSemver(b.version),locator=v.backendLocator(b.backendLocator),definition=v.serverDefinition(b.serverDefinition),schema=v.envSchema(b.envSchema),revisionId=id(),t=now();return immediate(db,()=>{const current=db.query("SELECT i.*,p.status publisher_status,b.status backend_status FROM mcp_items i JOIN publishers p ON p.id=i.publisher_id JOIN backend_registries b ON b.id=i.backend_registry_id WHERE i.id=? AND i.publisher_id=?").get(item.id,publisherId) as any;assert(current,404,"ITEM_NOT_FOUND");assert(current.publisher_status==="active",403,"PUBLISHER_SUSPENDED");assert(current.status==="active",409,"ITEM_NOT_ACTIVE");assert(current.backend_status==="active",409,"BACKEND_DISABLED");const old=db.query("SELECT revision_id FROM mcp_item_latest WHERE item_id=?").get(item.id) as any;try{db.query("INSERT INTO mcp_item_revisions(id,item_id,version,backend_locator_json,server_definition_json,env_schema_json,status,submitted_by,submitted_at,published_at,published_by_type,published_by_id,created_at) VALUES(?,?,?,?,?,?,'published',?,?,?,?,?,?)").run(revisionId,item.id,version,JSON.stringify(locator),JSON.stringify(definition),schema===null?null:JSON.stringify(schema),publisherId,t,t,"publisher",publisherId,t)}catch(e:any){if(String(e).includes("UNIQUE"))throw new AppError(409,"VERSION_EXISTS");throw e}const updated=db.query("UPDATE mcp_item_latest SET revision_id=?,updated_at=? WHERE item_id=?").run(revisionId,t,item.id);assert(updated.changes===1,409,"LATEST_NOT_FOUND");db.query("INSERT INTO latest_revision_events VALUES(?,?,?,?,?,?,?,?,?)").run(id(),item.id,old?.revision_id??null,revisionId,"revision_publish","publisher",publisherId,requestId,t);return{item:item.slug,version,status:"published",latestVersion:version}})}
-export function configProjection(row:any){const definition=parse(row.server_definition_json);return{item:row.slug,version:row.version,backend:row.backend_slug,backendLocator:parse(row.backend_locator_json),envSchema:parse(row.env_schema_json),config:{mcpServers:{[row.slug]:definition}}}}
+import type { Db } from "../db/database.ts";
+import { id, immediate, now } from "../db/database.ts";
+import { assert, AppError } from "../errors.ts";
+import * as v from "../validation.ts";
+const parse = (x: string | null) => (x === null ? null : JSON.parse(x));
+export function ownedItem(db: Db, slug: string, publisherId: string) {
+  const x = db
+    .query(
+      "SELECT i.*,b.status backend_status FROM mcp_items i JOIN backend_registries b ON b.id=i.backend_registry_id WHERE i.slug=? AND i.publisher_id=?",
+    )
+    .get(slug, publisherId) as any;
+  assert(x, 404, "ITEM_NOT_FOUND");
+  return x;
+}
+export function createItem(
+  db: Db,
+  publisherId: string,
+  b: any,
+  requestId: string,
+) {
+  b = v.bodyObject(b);
+  const revision = v.bodyObject(b.revision);
+  const slug = v.globalSlug(b.slug),
+    backend = v.globalSlug(b.backend),
+    displayName = v.text(b.displayName, "displayName", 200, true)!,
+    version = v.exactSemver(revision.version),
+    locator = v.backendLocator(revision.backendLocator),
+    definition = v.serverDefinition(revision.serverDefinition),
+    schema = v.envSchema(revision.envSchema);
+  const itemId = id(),
+    revisionId = id(),
+    t = now();
+  return immediate(db, () => {
+    const p = db
+      .query("SELECT status FROM publishers WHERE id=?")
+      .get(publisherId) as any;
+    assert(p?.status === "active", 403, "PUBLISHER_SUSPENDED");
+    const br = db
+      .query("SELECT id,status FROM backend_registries WHERE slug=?")
+      .get(backend) as any;
+    assert(br, 422, "BACKEND_NOT_FOUND");
+    assert(br.status === "active", 409, "BACKEND_DISABLED");
+    try {
+      db.query(
+        "INSERT INTO mcp_items(id,slug,publisher_id,backend_registry_id,display_name,summary,description,homepage_url,repository_url,icon_url,tags_json,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,'pending',?,?)",
+      ).run(
+        itemId,
+        slug,
+        publisherId,
+        br.id,
+        displayName,
+        v.text(b.summary, "summary", 500),
+        v.text(b.description, "description", 10000),
+        v.displayUrl(b.homepageUrl),
+        v.displayUrl(b.repositoryUrl),
+        v.displayUrl(b.iconUrl),
+        JSON.stringify(v.tags(b.tags ?? [])),
+        t,
+        t,
+      );
+      db.query(
+        "INSERT INTO mcp_item_revisions(id,item_id,version,backend_locator_json,server_definition_json,env_schema_json,status,submitted_by,submitted_at,created_at) VALUES(?,?,?,?,?,?,'pending',?,?,?)",
+      ).run(
+        revisionId,
+        itemId,
+        version,
+        JSON.stringify(locator),
+        JSON.stringify(definition),
+        schema === null ? null : JSON.stringify(schema),
+        publisherId,
+        t,
+        t,
+      );
+    } catch (e: any) {
+      if (String(e).includes("UNIQUE"))
+        throw new AppError(409, "ITEM_OR_VERSION_EXISTS");
+      throw e;
+    }
+    db.query("INSERT INTO audit_logs VALUES(?,?,?,?,?,?,?,?,?)").run(
+      id(),
+      "item.create",
+      "publisher",
+      publisherId,
+      "item",
+      itemId,
+      requestId,
+      "{}",
+      t,
+    );
+    return {
+      slug,
+      status: "pending",
+      revision: { version, status: "pending" },
+      latestVersion: null,
+    };
+  });
+}
+export function publishRevision(
+  db: Db,
+  item: any,
+  b: any,
+  publisherId: string,
+  requestId: string,
+) {
+  b = v.bodyObject(b);
+  const version = v.exactSemver(b.version),
+    locator = v.backendLocator(b.backendLocator),
+    definition = v.serverDefinition(b.serverDefinition),
+    schema = v.envSchema(b.envSchema),
+    revisionId = id(),
+    t = now();
+  return immediate(db, () => {
+    const current = db
+      .query(
+        "SELECT i.*,p.status publisher_status,b.status backend_status FROM mcp_items i JOIN publishers p ON p.id=i.publisher_id JOIN backend_registries b ON b.id=i.backend_registry_id WHERE i.id=? AND i.publisher_id=?",
+      )
+      .get(item.id, publisherId) as any;
+    assert(current, 404, "ITEM_NOT_FOUND");
+    assert(current.publisher_status === "active", 403, "PUBLISHER_SUSPENDED");
+    assert(current.status === "active", 409, "ITEM_NOT_ACTIVE");
+    assert(current.backend_status === "active", 409, "BACKEND_DISABLED");
+    const old = db
+      .query("SELECT revision_id FROM mcp_item_latest WHERE item_id=?")
+      .get(item.id) as any;
+    try {
+      db.query(
+        "INSERT INTO mcp_item_revisions(id,item_id,version,backend_locator_json,server_definition_json,env_schema_json,status,submitted_by,submitted_at,published_at,published_by_type,published_by_id,created_at) VALUES(?,?,?,?,?,?,'published',?,?,?,?,?,?)",
+      ).run(
+        revisionId,
+        item.id,
+        version,
+        JSON.stringify(locator),
+        JSON.stringify(definition),
+        schema === null ? null : JSON.stringify(schema),
+        publisherId,
+        t,
+        t,
+        "publisher",
+        publisherId,
+        t,
+      );
+    } catch (e: any) {
+      if (String(e).includes("UNIQUE"))
+        throw new AppError(409, "VERSION_EXISTS");
+      throw e;
+    }
+    const updated = db
+      .query(
+        "UPDATE mcp_item_latest SET revision_id=?,updated_at=? WHERE item_id=?",
+      )
+      .run(revisionId, t, item.id);
+    assert(updated.changes === 1, 409, "LATEST_NOT_FOUND");
+    db.query(
+      "INSERT INTO latest_revision_events VALUES(?,?,?,?,?,?,?,?,?)",
+    ).run(
+      id(),
+      item.id,
+      old?.revision_id ?? null,
+      revisionId,
+      "revision_publish",
+      "publisher",
+      publisherId,
+      requestId,
+      t,
+    );
+    return {
+      item: item.slug,
+      version,
+      status: "published",
+      latestVersion: version,
+    };
+  });
+}
+export function configProjection(row: any) {
+  const definition = parse(row.server_definition_json);
+  return {
+    item: row.slug,
+    version: row.version,
+    backend: row.backend_slug,
+    backendLocator: parse(row.backend_locator_json),
+    envSchema: parse(row.env_schema_json),
+    config: { mcpServers: { [row.slug]: definition } },
+  };
+}

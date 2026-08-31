@@ -10,11 +10,15 @@ export type StableRouteIdentity = {
 export function stableRoutePath(
   identity: Omit<StableRouteIdentity, "suffix"> & { endpointPath: string },
 ) {
-  const packageSpec = encodeURIComponent(`${identity.packageName}@${identity.version}`);
+  const packageSpec = encodeURIComponent(
+    `${identity.packageName}@${identity.version}`,
+  );
   return `/mcp/npm/${packageSpec}/${encodeURIComponent(identity.serverId)}${identity.endpointPath}`;
 }
 
-export function parseStableRoute(path: string): StableRouteIdentity | undefined {
+export function parseStableRoute(
+  path: string,
+): StableRouteIdentity | undefined {
   const prefix = "/mcp/npm/";
   if (!path.startsWith(prefix)) return undefined;
 
@@ -31,7 +35,11 @@ export function parseStableRoute(path: string): StableRouteIdentity | undefined 
   }
 
   const match = packageSpec.match(/^(.+)@([^@]+)$/);
-  if (!match || !PACKAGE_NAME.test(match[1] ?? "") || !EXACT_VERSION.test(match[2] ?? "")) {
+  if (
+    !match ||
+    !PACKAGE_NAME.test(match[1] ?? "") ||
+    !EXACT_VERSION.test(match[2] ?? "")
+  ) {
     return undefined;
   }
 
@@ -44,7 +52,10 @@ export function parseStableRoute(path: string): StableRouteIdentity | undefined 
   if (!SERVER_ID.test(serverId)) return undefined;
 
   const suffixSegments = segments.slice(serverIndex + 1);
-  if (suffixSegments.length === 0 || suffixSegments.some(segment => segment === "." || segment === "..")) {
+  if (
+    suffixSegments.length === 0 ||
+    suffixSegments.some((segment) => segment === "." || segment === "..")
+  ) {
     return undefined;
   }
 

@@ -8,7 +8,8 @@ test("renders README headings and lists", () => {
 });
 
 test("sanitizes untrusted README HTML and URLs", () => {
-  const markdown = "<script>alert(1)</script>\n\n<img src=x onerror=alert(2)>\n\n[unsafe](javascript:alert(3))";
+  const markdown =
+    "<script>alert(1)</script>\n\n<img src=x onerror=alert(2)>\n\n[unsafe](javascript:alert(3))";
   const html = renderReadme(markdown);
   expect(html).not.toContain("<script");
   expect(html).not.toContain("onerror");

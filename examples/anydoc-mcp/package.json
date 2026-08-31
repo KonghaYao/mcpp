@@ -5,9 +5,21 @@
   "type": "module",
   "private": false,
   "license": "MIT",
-  "engines": { "node": ">=20" },
-  "keywords": ["mcp", "mcp-plugin", "anydoc", "document", "markdown"],
-  "files": ["dist", "mcp.json", "README.md"],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-plugin",
+    "anydoc",
+    "document",
+    "markdown"
+  ],
+  "files": [
+    "dist",
+    "mcp.json",
+    "README.md"
+  ],
   "scripts": {
     "build": "bun build src/server.ts --target=node --format=esm --external @firecrawl/anydoc --external @modelcontextprotocol/server --external zod --outdir=dist",
     "test": "bun test",

@@ -2,7 +2,6 @@
 
 [文档库首页](index.md) · [上一篇：MCP Skills 与 Agents](mcp-skills.md) · [下一篇：MCP Resources 发现与缓存](mcp-resources.md)
 
-
 本章定义 **MCP Tools**——Agent 侧的工具使用约定与 Server / Skill 作者的「可被正确调用」要求。MCPP 不重述 `tools/list` / `tools/call` 的传输定义（见 MCP 规范），只规定 Agent 如何消费工具目录、以及 Skill 作者 / Server 如何提高工具的「可被 Agent 正确调用」程度。
 
 ## 6.1 元数据质量
@@ -41,10 +40,10 @@ MCP 2026-07-28 无 protocol 层会话。跨调用的状态由**显式句柄**承
 
 MCP 区分两类错误，MCPP 规定其 Agent 侧处置：
 
-| 错误类型 | 载体 | 含义 | Agent 处置 |
-| --- | --- | --- | --- |
-| 协议错误（Protocol Error） | JSON-RPC `error`（如 `-32602` Unknown tool） | 请求结构本身有误，模型难以修复 | 不重试，报告；可检查参数后**有限**重试 |
-| 工具执行错误（Tool Execution Error） | 结果 `isError: true` | 业务/校验失败，反馈可操作 | SHOULD 将错误文本回传模型，允许基于其自纠正后重试 |
+| 错误类型                             | 载体                                         | 含义                           | Agent 处置                                        |
+| ------------------------------------ | -------------------------------------------- | ------------------------------ | ------------------------------------------------- |
+| 协议错误（Protocol Error）           | JSON-RPC `error`（如 `-32602` Unknown tool） | 请求结构本身有误，模型难以修复 | 不重试，报告；可检查参数后**有限**重试            |
+| 工具执行错误（Tool Execution Error） | 结果 `isError: true`                         | 业务/校验失败，反馈可操作      | SHOULD 将错误文本回传模型，允许基于其自纠正后重试 |
 
 Agent **MUST** 实施：
 

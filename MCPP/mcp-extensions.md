@@ -4,7 +4,6 @@
 
 Channel 不属于 MCP Extension；其纯标准绑定见 [MCP Channel](mcp-channel.md)。
 
-
 本章定义 **MCP Extension**——MCPP 已登记扩展能力的声明与双向协商约定：扩展标识与版本、能力位、最低实现面。MCPP 不发明新的传输语义，协商机制沿用 MCP 扩展机制。[MCP Channel](mcp-channel.md) 不属于 MCP Extension：`ChannelManager` / `Channel` / `send` / `receive` 仅为 SDK 内部抽象，线级仅使用标准 Resources、Subscriptions 与 Tools，因此不得为 Channel 增加 extension capability 或私有 JSON-RPC method。
 
 ## 9.1 扩展标识与版本
@@ -18,15 +17,15 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 
 ## 9.2 能力位
 
-| 能力位 | 作用域 | 说明 |
-| --- | --- | --- |
-| `io.modelcontextprotocol/skills`（extension） | server declarations | 承诺实现 `skills/list` 与 `skills/get` |
-| `io.modelcontextprotocol/skills.directoryRead` | extension setting | 承诺实现 `resources/directory/read` |
-| `io.mcpp/agents` | server declarations | Server 承诺按 5.10 通过标准 Resources 暴露 MCP Agents；不新增 `agents/*` 方法，也不表示 Host 必然支持 subagent runtime |
-| `io.mcpp/server-catalog` | server declarations | Catalog endpoint 实现只读 `mcpp/servers/list` / `get` / `resolve`（3.7.1）；不声明即不得调用 |
-| `io.mcpp/skill-orchestration` | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载 |
-| `io.mcpp/context-budget` | agent-side | Agent 支持 `io.mcpp/context_budget` 预算约束 |
-| `io.mcpp/server-cache-version` | 双向协商 | Agent 支持按 Server Cache Version 复用 MCPP Cache；Server 声明 opaque `cacheVersion` |
+| 能力位                                         | 作用域                  | 说明                                                                                                                   |
+| ---------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `io.modelcontextprotocol/skills`（extension）  | server declarations     | 承诺实现 `skills/list` 与 `skills/get`                                                                                 |
+| `io.modelcontextprotocol/skills.directoryRead` | extension setting       | 承诺实现 `resources/directory/read`                                                                                    |
+| `io.mcpp/agents`                               | server declarations     | Server 承诺按 5.10 通过标准 Resources 暴露 MCP Agents；不新增 `agents/*` 方法，也不表示 Host 必然支持 subagent runtime |
+| `io.mcpp/server-catalog`                       | server declarations     | Catalog endpoint 实现只读 `mcpp/servers/list` / `get` / `resolve`（3.7.1）；不声明即不得调用                           |
+| `io.mcpp/skill-orchestration`                  | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载                                             |
+| `io.mcpp/context-budget`                       | agent-side              | Agent 支持 `io.mcpp/context_budget` 预算约束                                                                           |
+| `io.mcpp/server-cache-version`                 | 双向协商                | Agent 支持按 Server Cache Version 复用 MCPP Cache；Server 声明 opaque `cacheVersion`                                   |
 
 Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 

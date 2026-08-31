@@ -7,52 +7,46 @@
  */
 import { readdir, stat, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-    isValidSkillName,
-} from "../types.ts";
-import type {
-    SkillFrontmatter,
-    SkillMeta,
-    McppMetadata,
-} from "../types.ts";
+import { isValidSkillName } from "../types.ts";
+import type { SkillFrontmatter, SkillMeta, McppMetadata } from "../types.ts";
 import { parseSkillFrontmatter, extractMcppMetadata } from "./frontmatter.ts";
 import { skillUri } from "./skill-uri.ts";
 import { computeDigest } from "./digest.ts";
 
 /** 读取单个 skill 目录的完整元信息；SKILL.md 缺失/不可读/无 name 时返回 undefined。 */
 export async function readSkillMeta(
-    skillsDir: string,
-    dirName: string,
-    opts?: { withDigest?: boolean },
+  skillsDir: string,
+  dirName: string,
+  opts?: { withDigest?: boolean },
 ): Promise<SkillMeta | undefined> {
-    if (!isValidSkillName(dirName)) return undefined;
-    const file = join(skillsDir, dirName, "SKILL.md");
-    try {
-        const [raw, st] = await Promise.all([
-            readFile(file, "utf-8"),
-            stat(file),
-        ]);
-        const frontmatter = parseSkillFrontmatter(raw, dirName);
-        if (
-            !frontmatter ||
-            typeof frontmatter.name !== "string" ||
-            !frontmatter.name ||
-            frontmatter.name !== dirName
-        ) {
-            return undefined;
-        }
-        return {
-            name: frontmatter.name,
-            description: typeof frontmatter.description === "string" ? frontmatter.description : undefined,
-            frontmatter: frontmatter as SkillFrontmatter,
-            mcpp: extractMcppMetadata(frontmatter) as McppMetadata | undefined,
-            uri: skillUri(frontmatter.name),
-            size: st.size,
-            digest: opts?.withDigest ? await computeDigest(raw) : undefined,
-        };
-    } catch {
-        return undefined;
+  if (!isValidSkillName(dirName)) return undefined;
+  const file = join(skillsDir, dirName, "SKILL.md");
+  try {
+    const [raw, st] = await Promise.all([readFile(file, "utf-8"), stat(file)]);
+    const frontmatter = parseSkillFrontmatter(raw, dirName);
+    if (
+      !frontmatter ||
+      typeof frontmatter.name !== "string" ||
+      !frontmatter.name ||
+      frontmatter.name !== dirName
+    ) {
+      return undefined;
     }
+    return {
+      name: frontmatter.name,
+      description:
+        typeof frontmatter.description === "string"
+          ? frontmatter.description
+          : undefined,
+      frontmatter: frontmatter as SkillFrontmatter,
+      mcpp: extractMcppMetadata(frontmatter) as McppMetadata | undefined,
+      uri: skillUri(frontmatter.name),
+      size: st.size,
+      digest: opts?.withDigest ? await computeDigest(raw) : undefined,
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -61,21 +55,21 @@ export async function readSkillMeta(
  * Discovery 层默认不计算 SHA-256（渐进披露）；编排/校验场景传 opts.withDigest。
  */
 export async function scanSkillsDir(
-    skillsDir: string,
-    opts?: { withDigest?: boolean },
+  skillsDir: string,
+  opts?: { withDigest?: boolean },
 ): Promise<SkillMeta[]> {
-    let entries;
-    try {
-        entries = await readdir(skillsDir, { withFileTypes: true });
-    } catch {
-        // 目录不存在或不可读：视为空技能集，避免 server 启动失败（3.5 失败隔离）
-        return [];
-    }
-    const metas = await Promise.all(
-        entries
-            .filter((e) => e.isDirectory())
-            .map((e) => readSkillMeta(skillsDir, e.name, opts)),
-    );
-    const skills = metas.filter((m): m is SkillMeta => m !== undefined);
-    return skills.sort((a, b) => a.name.localeCompare(b.name));
+  let entries;
+  try {
+    entries = await readdir(skillsDir, { withFileTypes: true });
+  } catch {
+    // 目录不存在或不可读：视为空技能集，避免 server 启动失败（3.5 失败隔离）
+    return [];
+  }
+  const metas = await Promise.all(
+    entries
+      .filter((e) => e.isDirectory())
+      .map((e) => readSkillMeta(skillsDir, e.name, opts)),
+  );
+  const skills = metas.filter((m): m is SkillMeta => m !== undefined);
+  return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
