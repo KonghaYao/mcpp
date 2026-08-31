@@ -13,6 +13,17 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "bun run --cwd packages/mcp-market typecheck",
-    "e2e": "bun run --cwd examples/anydoc-client e2e"
+    "e2e": "bun run --cwd examples/anydoc-client e2e",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css,scss,html,md,yaml,yml}": "prettier --write"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
+    "prettier": "3.6.2"
   }
 }
