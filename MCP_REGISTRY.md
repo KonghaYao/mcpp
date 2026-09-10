@@ -1,8 +1,10 @@
 # MCP Registry：Registry、NPM、Mono Server 与 Dynamic Host
 
 > 状态：讨论稿 v0.4（2026-08-24）
-> 依赖：[MCPP](MCPP/index.md)、MCP 2026-07-28、Agent Plugin 1.0.0、NPM registry 语义
+> 依赖：[MCPP](MCPP/index.md)、[MCPM Market](MCPM_MARKET.md)、MCP 2026-07-28、Agent Plugin 1.0.0、NPM registry 语义
 > 定位：定义 MCP Registry、MCP NPM Registry、MCP Mono Server 三个系统的边界，以及 Dynamic Host 在三者之间的受控部署关系。
+>
+> MCPM 的 Connector、专家团队与 Packument 元数据投影模型以 [`MCPM_MARKET.md`](MCPM_MARKET.md) 为权威。
 
 ## 1. 四个概念，一个部署链
 

@@ -1,7 +1,9 @@
 # MCPM 目录与治理控制面设计
 
-> 状态：实施基线（supersedes 旧 NPM 设计）
+> 状态：历史实施基线；市场资产、NPM 元数据与专家团队模型已被 [`MCPM_MARKET.md`](../../MCPM_MARKET.md) 取代
 > 日期：2026-08-26
+>
+> 本文仍用于说明当前 `packages/mcp-market` 的既有实现。新功能设计与迁移目标以 [`MCPM_MARKET.md`](../../MCPM_MARKET.md) 为唯一权威；若两者冲突，以新文档为准。
 
 ## 1. 边界
 

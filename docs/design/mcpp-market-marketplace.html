@@ -1,0 +1,1757 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MCPP Market 专家与连接器市场设计稿" />
+    <title>MCPP Market · 能力市场</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#17191C",
+              muted: "#686D76",
+              line: "#E8EAEF",
+              fog: "#F6F7F9",
+              cobalt: "#315CEC",
+              periwinkle: "#DDE6FF",
+            },
+            fontFamily: {
+              sans: [
+                "Inter",
+                "ui-sans-serif",
+                "PingFang SC",
+                "Microsoft YaHei",
+                "sans-serif",
+              ],
+            },
+            boxShadow: {
+              card: "0 18px 45px rgba(23, 25, 28, 0.08)",
+              float: "0 8px 24px rgba(49, 92, 236, 0.16)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        position: relative;
+        isolation: isolate;
+        font-family:
+          Inter, ui-sans-serif, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        z-index: -2;
+        inset: 64px 0 0;
+        background: url("images/img_marketplace_background.png") top center /
+          min(100%, 1920px) auto no-repeat;
+        opacity: 0.1;
+        pointer-events: none;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        z-index: -1;
+        inset: 64px 0 0;
+        background: rgba(255, 255, 255, 0.64);
+        pointer-events: none;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .nav-item::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -21px;
+        width: 18px;
+        height: 3px;
+        border-radius: 99px;
+        background: #17191c;
+        transform: translateX(-50%) scaleX(0);
+        transition: transform 180ms ease;
+      }
+      .nav-item.active::after {
+        transform: translateX(-50%) scaleX(1);
+      }
+      .nav-item.active {
+        color: #17191c;
+      }
+      .scene-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          100deg,
+          rgba(16, 24, 42, 0.22),
+          transparent 58%
+        );
+        opacity: 0;
+        transition: opacity 240ms ease;
+      }
+      .scene-card:hover::before {
+        opacity: 1;
+      }
+      .scene-card:hover .scene-art {
+        transform: translate3d(0, -5px, 0) rotate(-1deg);
+      }
+      .scene-art {
+        transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .market-view {
+        animation: reveal 260ms ease-out both;
+      }
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(7px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen bg-white text-ink antialiased selection:bg-periwinkle"
+  >
+    <header
+      class="sticky top-0 z-50 border-b border-line/90 bg-white/90 backdrop-blur-xl"
+    >
+      <div
+        class="mx-auto flex h-16 max-w-[1280px] items-center gap-6 px-5 md:px-7"
+      >
+        <a
+          href="#"
+          class="flex shrink-0 items-center gap-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cobalt/30"
+          aria-label="MCPP Market 首页"
+        >
+          <img
+            src="images/img_mcpp_market_brand_icon.png"
+            alt=""
+            class="size-8 rounded-[9px] border border-line bg-white object-cover shadow-sm"
+          />
+          <span
+            class="hidden text-[15px] font-semibold tracking-[-0.02em] sm:block"
+            >MCPP Market</span
+          >
+        </a>
+
+        <nav
+          class="flex h-full items-center gap-1 sm:gap-3"
+          aria-label="能力市场导航"
+        >
+          <button
+            class="nav-item active relative px-3 py-2 text-[14px] font-medium text-ink transition hover:text-ink sm:px-4"
+            data-view="experts"
+          >
+            专家
+          </button>
+          <button
+            class="nav-item relative px-3 py-2 text-[14px] font-medium text-muted transition hover:text-ink sm:px-4"
+            data-view="connectors"
+          >
+            连接器
+          </button>
+        </nav>
+
+        <div class="ml-auto flex items-center gap-2.5">
+          <label
+            class="group hidden h-10 w-[270px] items-center gap-2 rounded-xl bg-fog px-3.5 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-cobalt/20 lg:flex"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="size-[17px] shrink-0 text-[#8B9099]"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="6.5"></circle>
+              <path d="m16 16 4 4"></path>
+            </svg>
+            <input
+              id="global-search"
+              type="search"
+              autocomplete="off"
+              placeholder="搜索专家名称或描述"
+              class="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#9297A0]"
+            />
+            <kbd
+              class="rounded-md border border-line bg-white px-1.5 py-0.5 text-[10px] text-[#9297A0]"
+              >⌘ K</kbd
+            >
+          </label>
+          <button
+            id="design-guide-button"
+            class="hidden h-9 items-center rounded-lg px-3 text-[12px] font-medium text-muted transition hover:bg-fog hover:text-ink focus:outline-none focus:ring-2 focus:ring-cobalt/25 md:flex"
+          >
+            设计说明
+          </button>
+          <button
+            id="primary-action"
+            class="hidden h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-[12px] font-medium transition hover:border-[#D3D6DD] hover:bg-fog focus:outline-none focus:ring-2 focus:ring-cobalt/25 md:flex"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="size-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <path d="M12 3v18M3 12h18" />
+            </svg>
+            <span>我的专家</span>
+          </button>
+          <button
+            class="grid size-10 place-items-center rounded-xl border border-line text-muted transition hover:bg-fog lg:hidden"
+            aria-label="搜索"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="size-[18px]"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <circle cx="11" cy="11" r="6.5"></circle>
+              <path d="m16 16 4 4"></path>
+            </svg>
+          </button>
+          <button
+            class="grid size-9 place-items-center rounded-full bg-gradient-to-br from-[#D2E2FF] to-[#879CEB] text-xs font-semibold text-white ring-2 ring-white shadow-sm"
+            aria-label="个人中心"
+          >
+            Y
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1280px] px-5 pb-16 pt-6 md:px-7">
+      <section id="experts-view" class="market-view">
+        <div class="mb-5 flex items-end justify-between">
+          <div>
+            <p
+              class="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              Curated for you
+            </p>
+            <h1 class="text-[24px] font-semibold tracking-[-0.035em]">
+              按场景找专家
+            </h1>
+          </div>
+          <div class="hidden">
+            <button
+              class="scene-prev grid size-8 place-items-center rounded-full border border-line text-muted transition hover:bg-fog"
+              aria-label="上一个场景"
+            >
+              ←
+            </button>
+            <button
+              class="scene-next grid size-8 place-items-center rounded-full border border-line text-muted transition hover:bg-fog"
+              aria-label="下一个场景"
+            >
+              →
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="scene-filter-grid"
+          class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+        ></div>
+
+        <div id="scene-strip" class="hidden">
+          <article
+            class="scene-card group relative min-h-[156px] cursor-pointer overflow-hidden rounded-[15px] bg-[#DCE9F1] p-6"
+          >
+            <div class="relative z-10 max-w-[58%]">
+              <span
+                class="mb-9 inline-flex rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[#526979] backdrop-blur"
+                >新学期 · 新效率</span
+              >
+              <h2 class="text-[21px] font-semibold tracking-[-0.04em]">
+                开学季
+              </h2>
+              <p class="mt-1.5 text-[12px] leading-5 text-[#52606B]">
+                论文、课件与学习计划，一次准备好
+              </p>
+            </div>
+            <div
+              class="scene-art absolute -bottom-5 -right-1 h-[154px] w-[160px]"
+            >
+              <div
+                class="absolute bottom-6 right-5 h-[100px] w-[82px] rotate-6 rounded-[10px] bg-white shadow-card"
+              >
+                <span
+                  class="absolute left-3 top-4 h-2 w-10 rounded bg-[#AFC7E8]"
+                ></span
+                ><span
+                  class="absolute left-3 top-9 h-1 w-14 rounded bg-[#E4E9EF]"
+                ></span
+                ><span
+                  class="absolute left-3 top-14 h-1 w-11 rounded bg-[#E4E9EF]"
+                ></span>
+              </div>
+              <div
+                class="absolute bottom-4 left-0 h-[92px] w-[66px] -rotate-12 rounded-[9px] bg-[#799BC1] shadow-lg"
+              >
+                <span
+                  class="absolute inset-x-3 top-4 h-10 rounded bg-[#C7DCF0]"
+                ></span>
+              </div>
+              <div
+                class="absolute bottom-3 left-16 size-9 rounded-full bg-[#F0BC8D]"
+              ></div>
+            </div>
+          </article>
+
+          <article
+            class="scene-card group relative min-h-[156px] cursor-pointer overflow-hidden rounded-[15px] bg-[#E9E4F5] p-6"
+          >
+            <div class="relative z-10 max-w-[59%]">
+              <span
+                class="mb-9 inline-flex rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[#6C5D89] backdrop-blur"
+                >灵感随时在线</span
+              >
+              <h2 class="text-[21px] font-semibold tracking-[-0.04em]">
+                内容创作
+              </h2>
+              <p class="mt-1.5 text-[12px] leading-5 text-[#665E72]">
+                从选题到成稿，保持你的表达
+              </p>
+            </div>
+            <div
+              class="scene-art absolute -bottom-3 right-3 h-[150px] w-[150px]"
+            >
+              <div
+                class="absolute bottom-4 right-1 size-[105px] rotate-6 rounded-[24px] bg-[#8C78BC] shadow-card"
+              ></div>
+              <div
+                class="absolute bottom-8 right-9 size-[76px] -rotate-6 rounded-[18px] bg-white shadow-lg"
+              >
+                <span
+                  class="absolute left-5 top-5 size-8 rounded-full bg-gradient-to-br from-[#F2B3D1] to-[#8C78BC]"
+                ></span>
+              </div>
+              <svg
+                viewBox="0 0 40 40"
+                class="absolute left-1 top-3 size-11 text-[#66509D]"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  d="M20 3c2 9 8 15 17 17-9 2-15 8-17 17-2-9-8-15-17-17 9-2 15-8 17-17Z"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
+            </div>
+          </article>
+
+          <article
+            class="scene-card group relative min-h-[156px] cursor-pointer overflow-hidden rounded-[15px] bg-[#DDEAE7] p-6"
+          >
+            <div class="relative z-10 max-w-[60%]">
+              <span
+                class="mb-9 inline-flex rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[#486C64] backdrop-blur"
+                >数据先于判断</span
+              >
+              <h2 class="text-[21px] font-semibold tracking-[-0.04em]">
+                投资分析
+              </h2>
+              <p class="mt-1.5 text-[12px] leading-5 text-[#526963]">
+                读懂行情、财报与市场变化
+              </p>
+            </div>
+            <div
+              class="scene-art absolute bottom-0 right-1 h-[150px] w-[164px]"
+            >
+              <div
+                class="absolute bottom-4 right-2 h-[112px] w-[140px] -rotate-3 rounded-[14px] bg-[#213A37] shadow-card"
+              >
+                <span
+                  class="absolute left-5 top-6 h-[1px] w-24 bg-white/15"
+                ></span
+                ><span
+                  class="absolute left-5 top-12 h-[1px] w-24 bg-white/15"
+                ></span
+                ><span
+                  class="absolute left-5 top-[72px] h-[1px] w-24 bg-white/15"
+                ></span>
+                <svg
+                  viewBox="0 0 110 65"
+                  class="absolute bottom-3 left-4 h-[70px] w-[110px]"
+                  fill="none"
+                >
+                  <path
+                    d="m4 52 18-13 15 7 17-26 18 10 28-22"
+                    stroke="#7DE0BC"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="100" cy="8" r="4" fill="#7DE0BC" />
+                </svg>
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="scene-card group relative min-h-[156px] cursor-pointer overflow-hidden rounded-[15px] bg-[#F1E5DF] p-6"
+          >
+            <div class="relative z-10 max-w-[59%]">
+              <span
+                class="mb-9 inline-flex rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-medium text-[#876451] backdrop-blur"
+                >可靠的第二意见</span
+              >
+              <h2 class="text-[21px] font-semibold tracking-[-0.04em]">
+                法律咨询
+              </h2>
+              <p class="mt-1.5 text-[12px] leading-5 text-[#75665F]">
+                法规检索、合同审阅与风险提示
+              </p>
+            </div>
+            <div
+              class="scene-art absolute -bottom-1 right-1 h-[150px] w-[160px]"
+            >
+              <div
+                class="absolute bottom-4 right-5 h-[114px] w-[92px] rotate-6 rounded-[12px] bg-[#5D4036] shadow-card"
+              >
+                <span
+                  class="absolute inset-x-4 top-5 h-2 rounded bg-[#D7B299]"
+                ></span
+                ><span
+                  class="absolute inset-x-4 top-11 h-1 rounded bg-white/25"
+                ></span
+                ><span
+                  class="absolute inset-x-4 top-16 h-1 rounded bg-white/25"
+                ></span>
+              </div>
+              <div
+                class="absolute bottom-7 left-2 h-3 w-20 -rotate-[28deg] rounded-full bg-[#B68668] shadow"
+              ></div>
+              <div
+                class="absolute bottom-5 left-0 h-3 w-10 rounded-full bg-[#8C5F48]"
+              ></div>
+            </div>
+          </article>
+        </div>
+
+        <div
+          class="mb-4 mt-8 flex flex-col gap-4 border-b border-line pb-4 md:flex-row md:items-end md:justify-between"
+        >
+          <div>
+            <h2 class="text-[22px] font-semibold tracking-[-0.03em]">专家</h2>
+            <div
+              id="expert-categories"
+              class="mt-3 flex flex-wrap gap-1.5"
+            ></div>
+          </div>
+          <div
+            id="sort-tabs"
+            class="flex items-center gap-5 text-[12px] text-muted"
+          >
+            <span>排序</span>
+            <button class="sort font-semibold text-ink" data-sort="综合">
+              综合
+            </button>
+            <button class="sort transition hover:text-ink" data-sort="最热">
+              最热
+            </button>
+            <button class="sort transition hover:text-ink" data-sort="最新">
+              最新
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="expert-grid"
+          class="grid gap-x-2 gap-y-1 md:grid-cols-2 xl:grid-cols-3"
+        ></div>
+        <p
+          id="expert-empty"
+          class="hidden py-20 text-center text-sm text-muted"
+        >
+          没有找到匹配的专家，试试其他关键词。
+        </p>
+      </section>
+
+      <section id="connectors-view" class="market-view hidden">
+        <div class="mb-5 flex items-end justify-between">
+          <div>
+            <p
+              class="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              Connect your work
+            </p>
+            <h1 class="text-[24px] font-semibold tracking-[-0.035em]">
+              按场景找连接器
+            </h1>
+          </div>
+          <p class="hidden text-[11px] text-muted sm:block">
+            选择场景，找到能为专家提供数据与动作的工具
+          </p>
+        </div>
+
+        <div
+          id="connector-scene-grid"
+          class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+        ></div>
+
+        <div
+          class="mb-4 mt-8 flex flex-col gap-4 border-b border-line pb-4 md:flex-row md:items-end md:justify-between"
+        >
+          <div>
+            <h2 class="text-[22px] font-semibold tracking-[-0.03em]">连接器</h2>
+            <div
+              id="connector-categories"
+              class="mt-3 flex flex-wrap gap-1.5"
+            ></div>
+          </div>
+          <div class="flex items-center gap-5 text-[11px] text-muted">
+            <span>排序</span>
+            <button
+              class="connector-sort font-semibold text-ink"
+              data-sort="综合"
+            >
+              综合
+            </button>
+            <button
+              class="connector-sort transition hover:text-ink"
+              data-sort="最热"
+            >
+              最热
+            </button>
+            <button
+              class="connector-sort transition hover:text-ink"
+              data-sort="最新"
+            >
+              最新
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="connector-grid"
+          class="grid gap-x-2 gap-y-1 md:grid-cols-2 xl:grid-cols-3"
+        ></div>
+        <p
+          id="connector-empty"
+          class="hidden py-20 text-center text-sm text-muted"
+        >
+          没有找到匹配的连接器。
+        </p>
+      </section>
+    </main>
+
+    <button
+      id="design-guide-fab"
+      class="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-2.5 text-[12px] font-semibold shadow-card transition hover:-translate-y-0.5 md:bottom-6 md:right-6 md:px-4"
+      aria-haspopup="dialog"
+    >
+      <span
+        class="grid size-5 place-items-center rounded-full bg-ink text-[10px] text-white"
+        >?</span
+      >
+      如何设计这个系统
+    </button>
+
+    <div
+      id="design-guide"
+      class="fixed inset-0 z-[70] hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="design-guide-title"
+    >
+      <button
+        id="design-guide-backdrop"
+        class="absolute inset-0 bg-ink/25 backdrop-blur-[2px]"
+        aria-label="关闭设计说明"
+      ></button>
+      <aside
+        class="absolute inset-y-0 right-0 flex w-full max-w-[680px] flex-col bg-white shadow-2xl"
+      >
+        <header
+          class="flex h-16 shrink-0 items-center justify-between border-b border-line px-6 md:px-8"
+        >
+          <div>
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              System blueprint
+            </p>
+            <h2
+              id="design-guide-title"
+              class="mt-0.5 text-[18px] font-semibold tracking-[-0.03em]"
+            >
+              如何设计这个系统
+            </h2>
+          </div>
+          <button
+            id="design-guide-close"
+            class="grid size-9 place-items-center rounded-full border border-line text-lg text-muted transition hover:bg-fog hover:text-ink"
+            aria-label="关闭设计说明"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="overflow-y-auto px-6 py-7 md:px-8">
+          <section class="rounded-[18px] bg-ink p-6 text-white">
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/50"
+            >
+              01 · Product thesis
+            </p>
+            <h3
+              class="mt-3 text-[23px] font-semibold leading-tight tracking-[-0.04em]"
+            >
+              不是“插件商店”，而是 AI 工作能力的装配台。
+            </h3>
+            <p class="mt-3 max-w-xl text-[12px] leading-6 text-white/65">
+              用户不需要理解模型和协议，只需要回答两个问题：找谁来做，以及允许它连接哪些工作数据与工具。
+            </p>
+            <div
+              class="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-[11px]"
+            >
+              <div class="rounded-xl bg-white/10 p-3">
+                <strong class="block text-[14px]">专家</strong
+                ><span class="text-white/50">角色与决策</span>
+              </div>
+              <span class="text-white/30">×</span>
+              <div class="rounded-xl bg-white/10 p-3">
+                <strong class="block text-[14px]">连接器</strong
+                ><span class="text-white/50">数据与动作</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="mt-8 grid gap-7 md:grid-cols-2">
+            <section>
+              <p
+                class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+              >
+                02 · Information architecture
+              </p>
+              <h3 class="mt-2 text-[16px] font-semibold">
+                按用户意图组织，而非技术类型
+              </h3>
+              <div class="mt-4 space-y-2 text-[11px]">
+                <div class="flex gap-3 rounded-xl border border-line p-3">
+                  <span class="font-mono text-cobalt">A</span>
+                  <div>
+                    <strong>发现</strong>
+                    <p class="mt-0.5 leading-5 text-muted">
+                      精选场景建立认知，分类与搜索承接明确需求。
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-3 rounded-xl border border-line p-3">
+                  <span class="font-mono text-cobalt">B</span>
+                  <div>
+                    <strong>判断</strong>
+                    <p class="mt-0.5 leading-5 text-muted">
+                      卡片只回答能力、来源与适用场景；详细权限进入详情页。
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-3 rounded-xl border border-line p-3">
+                  <span class="font-mono text-cobalt">C</span>
+                  <div>
+                    <strong>装配</strong>
+                    <p class="mt-0.5 leading-5 text-muted">
+                      添加后进入工作台，在真实任务中组合并运行。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <p
+                class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+              >
+                03 · Core model
+              </p>
+              <h3 class="mt-2 text-[16px] font-semibold">三个核心对象</h3>
+              <dl
+                class="mt-4 divide-y divide-line border-y border-line text-[11px]"
+              >
+                <div class="grid grid-cols-[76px_1fr] gap-3 py-2.5">
+                  <dt class="font-semibold">Expert</dt>
+                  <dd class="text-muted">身份、能力边界、作者、推荐组合</dd>
+                </div>
+                <div class="grid grid-cols-[76px_1fr] gap-3 py-2.5">
+                  <dt class="font-semibold">Connector</dt>
+                  <dd class="text-muted">授权、Tools、Resources、健康状态</dd>
+                </div>
+                <div class="grid grid-cols-[76px_1fr] gap-3 py-2.5">
+                  <dt class="font-semibold">Workspace</dt>
+                  <dd class="text-muted">用户安装项、组合关系与执行记录</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="mt-8 border-t border-line pt-7">
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              04 · Key journeys
+            </p>
+            <h3 class="mt-2 text-[16px] font-semibold">
+              先完成四条闭环，再扩展功能
+            </h3>
+            <div class="mt-4 grid gap-2 text-[11px] sm:grid-cols-2">
+              <div class="rounded-xl bg-fog p-4">
+                <span class="font-mono text-[10px] text-muted">J01</span
+                ><strong class="mt-1 block"
+                  >场景 → 专家 → 添加 → 开始对话</strong
+                >
+              </div>
+              <div class="rounded-xl bg-fog p-4">
+                <span class="font-mono text-[10px] text-muted">J02</span
+                ><strong class="mt-1 block"
+                  >搜索 → 连接器 → 授权 → 测试成功</strong
+                >
+              </div>
+              <div class="rounded-xl bg-fog p-4">
+                <span class="font-mono text-[10px] text-muted">J03</span
+                ><strong class="mt-1 block"
+                  >专家详情 → 推荐连接器 → 装配工作台</strong
+                >
+              </div>
+              <div class="rounded-xl bg-fog p-4">
+                <span class="font-mono text-[10px] text-muted">J04</span
+                ><strong class="mt-1 block"
+                  >运行失败 → 定位权限 → 修复并重试</strong
+                >
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-8 border-t border-line pt-7">
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              05 · Component rules
+            </p>
+            <div class="mt-4 grid gap-x-7 gap-y-5 sm:grid-cols-2">
+              <div>
+                <h3 class="text-[13px] font-semibold">专家卡</h3>
+                <p class="mt-1 text-[11px] leading-5 text-muted">
+                  名称优先；来源建立信任；简介不超过两行；标签最多三个；添加按钮在
+                  Hover 或键盘聚焦时出现。
+                </p>
+              </div>
+              <div>
+                <h3 class="text-[13px] font-semibold">连接器卡</h3>
+                <p class="mt-1 text-[11px] leading-5 text-muted">
+                  Logo 是首要识别线索；描述强调用户能完成的动作，不罗列
+                  API；安装后“+”变为“✓”。
+                </p>
+              </div>
+              <div>
+                <h3 class="text-[13px] font-semibold">筛选与搜索</h3>
+                <p class="mt-1 text-[11px] leading-5 text-muted">
+                  全局搜索始终保留；分类只做高频入口；筛选结果即时反馈，并提供可恢复的空状态。
+                </p>
+              </div>
+              <div>
+                <h3 class="text-[13px] font-semibold">权限确认</h3>
+                <p class="mt-1 text-[11px] leading-5 text-muted">
+                  授权前展示数据范围、可执行动作与提供方；高风险写操作必须二次确认，并留下审计记录。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-8 border-t border-line pt-7">
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-cobalt"
+            >
+              06 · Visual system
+            </p>
+            <div class="mt-4 grid gap-5 sm:grid-cols-[1.2fr_1fr]">
+              <div>
+                <h3 class="text-[13px] font-semibold">密度规则</h3>
+                <ul class="mt-2 space-y-1.5 text-[11px] leading-5 text-muted">
+                  <li>· 桌面容器上限 1280px，正文有效行宽不超过 72 字符。</li>
+                  <li>· 市场列表桌面三列、平板两列、手机单列。</li>
+                  <li>· 基础间距 4px；常用组合为 8 / 12 / 16 / 24 / 32。</li>
+                  <li>· 首屏至少展示一排场景和两排能力卡。</li>
+                </ul>
+              </div>
+              <div>
+                <h3 class="text-[13px] font-semibold">颜色与层级</h3>
+                <div class="mt-3 flex gap-2">
+                  <span class="size-8 rounded-lg bg-ink" title="#17191C"></span
+                  ><span
+                    class="size-8 rounded-lg bg-cobalt"
+                    title="#315CEC"
+                  ></span
+                  ><span
+                    class="size-8 rounded-lg bg-[#686D76]"
+                    title="#686D76"
+                  ></span
+                  ><span
+                    class="size-8 rounded-lg border border-line bg-fog"
+                    title="#F6F7F9"
+                  ></span
+                  ><span
+                    class="size-8 rounded-lg border border-line bg-white"
+                    title="#FFFFFF"
+                  ></span>
+                </div>
+                <p class="mt-2 text-[10px] leading-4 text-muted">
+                  品牌色只用于链接、焦点与关键状态；连接器品牌色仅存在于 Logo
+                  容器。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="mt-8 rounded-[16px] border border-[#F0DFA9] bg-[#FFF9E8] p-5"
+          >
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9A7418]"
+            >
+              07 · Trust & safety
+            </p>
+            <h3 class="mt-2 text-[14px] font-semibold">
+              市场的信任成本高于普通应用商店
+            </h3>
+            <p class="mt-2 text-[11px] leading-5 text-[#74643B]">
+              必须把“谁提供、读什么、写什么、何时调用”设计成一级信息。连接异常、授权过期、Tool
+              变更和危险操作都要有独立状态，不能只显示笼统的“失败”。
+            </p>
+          </section>
+
+          <footer
+            class="mt-8 border-t border-line pt-5 text-[10px] leading-5 text-muted"
+          >
+            设计目标：让初次用户在 30 秒内理解三个能力层，在 2
+            分钟内完成第一次装配；让熟练用户不离开列表即可完成搜索、筛选和安装。
+          </footer>
+        </div>
+      </aside>
+    </div>
+
+    <div
+      id="toast"
+      class="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 translate-y-5 rounded-xl bg-ink px-4 py-3 text-[13px] text-white opacity-0 shadow-card transition duration-200"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <script>
+      const scenes = [
+        {
+          name: "校园学习",
+          image: "images/img_campus_learning_s01.png",
+          icon: "学",
+          desc: "课程、论文与备考",
+          tone: "#DCE9F1",
+          ink: "#416477",
+        },
+        {
+          name: "内容创作",
+          image: "images/img_content_creation_s02.png",
+          icon: "✦",
+          desc: "选题、写作与传播",
+          tone: "#E9E4F5",
+          ink: "#6C5D89",
+        },
+        {
+          name: "投资分析",
+          image: "images/img_investment_analysis_s03.png",
+          icon: "↗",
+          desc: "行情、财报与研究",
+          tone: "#DDEAE7",
+          ink: "#486C64",
+        },
+        {
+          name: "法律咨询",
+          image: "images/img_legal_consulting_s04.png",
+          icon: "§",
+          desc: "法规、案例与合同",
+          tone: "#F1E5DF",
+          ink: "#876451",
+        },
+        {
+          name: "小微企业",
+          image: "images/img_small_business_s05.png",
+          icon: "店",
+          desc: "经营、财税与增长",
+          tone: "#F4E7D5",
+          ink: "#8A6534",
+        },
+        {
+          name: "电商运营",
+          image: "images/img_ecommerce_operations_s06.png",
+          icon: "购",
+          desc: "选品、投放与客服",
+          tone: "#F7E2E8",
+          ink: "#9A5369",
+        },
+        {
+          name: "数据分析",
+          image: "images/img_data_analysis_s07.png",
+          icon: "数",
+          desc: "清洗、洞察与报告",
+          tone: "#E2EAF7",
+          ink: "#506B98",
+        },
+        {
+          name: "专业文档",
+          image: "images/img_professional_documents_s08.png",
+          icon: "文",
+          desc: "阅读、撰写与审校",
+          tone: "#E8E8E1",
+          ink: "#68685A",
+        },
+        {
+          name: "产品设计",
+          image: "images/img_product_design_s09.png",
+          icon: "形",
+          desc: "研究、原型与体验",
+          tone: "#E6E2F3",
+          ink: "#665B8A",
+        },
+        {
+          name: "工程开发",
+          image: "images/img_engineering_development_s10.png",
+          icon: "</>",
+          desc: "架构、编码与交付",
+          tone: "#DFECEA",
+          ink: "#3F7069",
+        },
+      ];
+
+      const experts = [
+        {
+          name: "论文研究助手",
+          author: "高校智库",
+          avatar: "学",
+          tone: "#DCE9F1",
+          ink: "#416477",
+          category: "校园学习",
+          desc: "从选题、文献综述到论文结构，帮助你建立清晰、可核验的研究过程。",
+          tags: ["文献检索", "论文", "引用"],
+          heat: 98,
+        },
+        {
+          name: "考试规划师",
+          author: "学习空间",
+          avatar: "考",
+          tone: "#E7F0F6",
+          ink: "#4C7185",
+          category: "校园学习",
+          desc: "根据考试时间与薄弱点拆解复习任务，持续调整每日学习计划。",
+          tags: ["备考", "学习计划", "复盘"],
+          heat: 86,
+        },
+        {
+          name: "爆款选题策划",
+          author: "内容工作室",
+          avatar: "✦",
+          tone: "#F1E8FF",
+          ink: "#8452B8",
+          category: "内容创作",
+          desc: "结合平台趋势与受众兴趣，生成有依据的选题方向、标题和内容结构。",
+          tags: ["选题", "自媒体", "内容策略"],
+          heat: 96,
+        },
+        {
+          name: "品牌文案编辑",
+          author: "Creative Lab",
+          avatar: "笔",
+          tone: "#F5E9FA",
+          ink: "#80568F",
+          category: "内容创作",
+          desc: "统一品牌语气，完成社媒、官网与活动文案的撰写和审校。",
+          tags: ["品牌", "文案", "审校"],
+          heat: 84,
+        },
+        {
+          name: "财报解读顾问",
+          author: "投研助手",
+          avatar: "↗",
+          tone: "#E2F3ED",
+          ink: "#28765C",
+          category: "投资分析",
+          desc: "从财务指标、业务结构和风险信号出发，把复杂财报转成可读结论。",
+          tags: ["财报", "公司研究", "风险提示"],
+          heat: 95,
+        },
+        {
+          name: "行业研究员",
+          author: "市场情报局",
+          avatar: "研",
+          tone: "#E1EFEA",
+          ink: "#3D7563",
+          category: "投资分析",
+          desc: "综合公开资料与市场数据，整理行业格局、竞争变化和关键趋势。",
+          tags: ["行业研究", "市场", "竞品"],
+          heat: 88,
+        },
+        {
+          name: "合同审阅专家",
+          author: "法务空间",
+          avatar: "§",
+          tone: "#F3E9E3",
+          ink: "#805A49",
+          category: "法律咨询",
+          desc: "识别合同中的权利义务、异常条款与潜在风险，并给出具体修改建议。",
+          tags: ["合同审查", "法律检索", "风险"],
+          heat: 94,
+        },
+        {
+          name: "法规案例检索",
+          author: "法律知识库",
+          avatar: "法",
+          tone: "#F5E9E4",
+          ink: "#8B5949",
+          category: "法律咨询",
+          desc: "围绕事实与争议焦点检索法规和案例，输出有出处的研究线索。",
+          tags: ["法规", "案例", "检索"],
+          heat: 85,
+        },
+        {
+          name: "小店经营顾问",
+          author: "经营研究所",
+          avatar: "店",
+          tone: "#F4E7D5",
+          ink: "#8A6534",
+          category: "小微企业",
+          desc: "拆解客流、成本与复购问题，为小店制定可执行的经营改善计划。",
+          tags: ["经营", "成本", "增长"],
+          heat: 93,
+        },
+        {
+          name: "财税合规助手",
+          author: "企业服务中心",
+          avatar: "税",
+          tone: "#F7ECD9",
+          ink: "#8B6A36",
+          category: "小微企业",
+          desc: "整理票据、报税节点与常见合规事项，提示经营过程中的财税风险。",
+          tags: ["财税", "合规", "票据"],
+          heat: 82,
+        },
+        {
+          name: "电商增长操盘手",
+          author: "增长实验室",
+          avatar: "购",
+          tone: "#F7E2E8",
+          ink: "#9A5369",
+          category: "电商运营",
+          desc: "从流量、转化和复购拆解店铺问题，设计活动与投放优化方案。",
+          tags: ["增长", "投放", "转化"],
+          heat: 92,
+        },
+        {
+          name: "商品选品专家",
+          author: "零售智库",
+          avatar: "品",
+          tone: "#FBEAF0",
+          ink: "#9B6072",
+          category: "电商运营",
+          desc: "结合需求趋势、竞争强度与利润空间，建立可解释的选品清单。",
+          tags: ["选品", "市场趋势", "利润"],
+          heat: 87,
+        },
+        {
+          name: "业务数据分析师",
+          author: "Data Studio",
+          avatar: "数",
+          tone: "#E2EAF7",
+          ink: "#506B98",
+          category: "数据分析",
+          desc: "清洗业务数据、定义指标并发现异常，把分析结果转成行动建议。",
+          tags: ["指标", "洞察", "可视化"],
+          heat: 97,
+        },
+        {
+          name: "调研报告分析师",
+          author: "洞察中心",
+          avatar: "析",
+          tone: "#E9EFF9",
+          ink: "#58709A",
+          category: "数据分析",
+          desc: "处理问卷和访谈材料，提炼关键发现并生成结构化研究报告。",
+          tags: ["问卷", "调研", "报告"],
+          heat: 83,
+        },
+        {
+          name: "专业报告撰写",
+          author: "文档工坊",
+          avatar: "文",
+          tone: "#E8E8E1",
+          ink: "#68685A",
+          category: "专业文档",
+          desc: "根据目标读者和资料完成报告框架、正文撰写、引用检查与格式统一。",
+          tags: ["报告", "结构", "格式"],
+          heat: 91,
+        },
+        {
+          name: "Office 文档助手",
+          author: "办公效率组",
+          avatar: "档",
+          tone: "#EFEFE9",
+          ink: "#6D6D60",
+          category: "专业文档",
+          desc: "处理 Word、Excel、PDF 与 PPT，完成摘要、转换、校对和内容提取。",
+          tags: ["Office", "PDF", "校对"],
+          heat: 89,
+        },
+        {
+          name: "产品体验设计师",
+          author: "Design Lab",
+          avatar: "形",
+          tone: "#E6E2F3",
+          ink: "#665B8A",
+          category: "产品设计",
+          desc: "从用户目标出发梳理信息架构、交互流程与界面规范。",
+          tags: ["UX", "原型", "设计系统"],
+          heat: 96,
+        },
+        {
+          name: "用户研究专家",
+          author: "体验研究院",
+          avatar: "访",
+          tone: "#EDE9F7",
+          ink: "#746895",
+          category: "产品设计",
+          desc: "设计访谈与可用性测试，帮助团队从真实证据中识别产品机会。",
+          tags: ["用户研究", "访谈", "测试"],
+          heat: 84,
+        },
+        {
+          name: "全栈开发专家",
+          author: "CodeBuddy",
+          avatar: "</>",
+          tone: "#DFECEA",
+          ink: "#3F7069",
+          category: "工程开发",
+          desc: "从技术方案到代码实现，覆盖前端、后端、测试与部署的完整过程。",
+          tags: ["架构", "编码", "部署"],
+          heat: 99,
+        },
+        {
+          name: "代码审查专家",
+          author: "Engineering Guild",
+          avatar: "CR",
+          tone: "#E5F0EE",
+          ink: "#4A756F",
+          category: "工程开发",
+          desc: "检查正确性、可维护性与安全风险，给出有优先级的修改建议。",
+          tags: ["Code Review", "质量", "安全"],
+          heat: 90,
+        },
+      ];
+
+      const connectors = [
+        {
+          name: "腾讯自选股",
+          icon: "股",
+          color: "#E64646",
+          bg: "#FFF0F0",
+          category: "数据服务",
+          desc: "获取实时行情、公司资料与市场资讯，辅助完成股票与行业分析。",
+        },
+        {
+          name: "QQ 邮箱",
+          icon: "Q",
+          color: "#3388FF",
+          bg: "#EAF4FF",
+          category: "办公协作",
+          desc: "读取、检索与整理邮件，在对话中完成摘要、回复与待办提取。",
+        },
+        {
+          name: "ima 知识库",
+          icon: "i",
+          color: "#17191C",
+          bg: "#F0F1F3",
+          category: "知识与文档",
+          desc: "连接你的 ima 知识库，让专家基于个人资料搜索、理解并回答问题。",
+        },
+        {
+          name: "乐享知识库",
+          icon: "乐",
+          color: "#5C64E7",
+          bg: "#EEEFFF",
+          category: "知识与文档",
+          desc: "访问企业知识、制度与经验文档，为团队提供有出处的准确回答。",
+        },
+        {
+          name: "腾讯文档",
+          icon: "文",
+          color: "#2D73EA",
+          bg: "#EAF2FF",
+          category: "知识与文档",
+          desc: "读取和编辑在线文档、表格与收集表，把讨论直接沉淀为协作文档。",
+        },
+        {
+          name: "腾讯会议",
+          icon: "会",
+          color: "#2F7AF7",
+          bg: "#EBF3FF",
+          category: "办公协作",
+          desc: "查询会议、整理纪要与行动项，让会前准备和会后跟进更简单。",
+        },
+        {
+          name: "企业微信",
+          icon: "企",
+          color: "#2E78ED",
+          bg: "#EBF3FF",
+          category: "办公协作",
+          desc: "连接企业沟通与客户联系场景，检索信息并推动协作任务。",
+        },
+        {
+          name: "飞书",
+          icon: "飞",
+          color: "#3370FF",
+          bg: "#EDF2FF",
+          category: "办公协作",
+          desc: "连接飞书消息、云文档和多维表格，跨应用完成信息处理。",
+        },
+        {
+          name: "钉钉",
+          icon: "钉",
+          color: "#168BFA",
+          bg: "#E9F5FF",
+          category: "办公协作",
+          desc: "读取组织协作信息，处理文档、日程和审批相关工作。",
+        },
+        {
+          name: "腾讯问卷",
+          icon: "问",
+          color: "#2D72E8",
+          bg: "#EAF2FF",
+          category: "数据服务",
+          desc: "创建问卷、收集反馈并分析结果，快速形成结构化研究结论。",
+        },
+        {
+          name: "TAPD",
+          icon: "T",
+          color: "#4768DD",
+          bg: "#EDF0FF",
+          category: "办公协作",
+          desc: "查询需求、缺陷和迭代计划，协助团队跟踪软件研发过程。",
+        },
+        {
+          name: "CNB",
+          icon: "C",
+          color: "#20A46B",
+          bg: "#E6F6EF",
+          category: "办公协作",
+          desc: "连接代码仓库、Issue 与 Pull Request，让开发协作进入专家工作流。",
+        },
+        {
+          name: "腾讯微云",
+          icon: "云",
+          color: "#2878EC",
+          bg: "#EAF3FF",
+          category: "知识与文档",
+          desc: "访问云端文件并提取信息，支持常见文档与图片内容的理解。",
+        },
+        {
+          name: "金山文档",
+          icon: "W",
+          color: "#E04747",
+          bg: "#FFF0F0",
+          category: "知识与文档",
+          desc: "读取和处理 Word、Excel、PDF 与 PPT 等办公文件内容。",
+        },
+        {
+          name: "北大法宝",
+          icon: "法",
+          color: "#A42B2B",
+          bg: "#F9ECEA",
+          category: "数据服务",
+          desc: "检索法律法规与司法案例，为法律研究和合同分析提供权威资料。",
+        },
+        {
+          name: "企查查",
+          icon: "企",
+          color: "#2583D8",
+          bg: "#EAF5FF",
+          category: "数据服务",
+          desc: "查询企业工商、股权与风险信息，支持客户洞察和商业尽调。",
+        },
+        {
+          name: "通达信",
+          icon: "通",
+          color: "#D43D3D",
+          bg: "#FFF0F0",
+          category: "数据服务",
+          desc: "连接证券行情与专业市场数据，为投研分析补充及时信息。",
+        },
+        {
+          name: "腾讯地图",
+          icon: "位",
+          color: "#3E78E8",
+          bg: "#EBF3FF",
+          category: "数据服务",
+          desc: "查询地点、路线与周边服务，让出行和线下业务规划更准确。",
+        },
+      ];
+
+      const connectorDetails = {
+        腾讯自选股: {
+          provider: "腾讯",
+          scene: "投资分析",
+          tags: ["实时行情", "公司资料", "市场资讯"],
+          heat: 98,
+        },
+        "QQ 邮箱": {
+          provider: "腾讯",
+          scene: "专业文档",
+          tags: ["邮件检索", "摘要", "待办提取"],
+          heat: 94,
+        },
+        "ima 知识库": {
+          provider: "腾讯",
+          scene: "校园学习",
+          tags: ["知识检索", "来源引用", "问答"],
+          heat: 96,
+        },
+        乐享知识库: {
+          provider: "腾讯",
+          scene: "小微企业",
+          tags: ["企业知识", "制度", "经验库"],
+          heat: 87,
+        },
+        腾讯文档: {
+          provider: "腾讯",
+          scene: "专业文档",
+          tags: ["在线文档", "表格", "收集表"],
+          heat: 97,
+        },
+        腾讯会议: {
+          provider: "腾讯",
+          scene: "专业文档",
+          tags: ["会议查询", "纪要", "行动项"],
+          heat: 91,
+        },
+        企业微信: {
+          provider: "腾讯",
+          scene: "小微企业",
+          tags: ["客户联系", "消息", "协作任务"],
+          heat: 95,
+        },
+        飞书: {
+          provider: "字节跳动",
+          scene: "产品设计",
+          tags: ["云文档", "多维表格", "消息"],
+          heat: 93,
+        },
+        钉钉: {
+          provider: "阿里巴巴",
+          scene: "小微企业",
+          tags: ["组织", "审批", "日程"],
+          heat: 92,
+        },
+        腾讯问卷: {
+          provider: "腾讯",
+          scene: "数据分析",
+          tags: ["问卷", "反馈收集", "结果分析"],
+          heat: 89,
+        },
+        TAPD: {
+          provider: "腾讯",
+          scene: "产品设计",
+          tags: ["需求", "缺陷", "迭代"],
+          heat: 88,
+        },
+        CNB: {
+          provider: "腾讯",
+          scene: "工程开发",
+          tags: ["代码仓库", "Issue", "Pull Request"],
+          heat: 90,
+        },
+        腾讯微云: {
+          provider: "腾讯",
+          scene: "内容创作",
+          tags: ["云文件", "内容提取", "图片理解"],
+          heat: 84,
+        },
+        金山文档: {
+          provider: "金山办公",
+          scene: "专业文档",
+          tags: ["Office", "PDF", "内容处理"],
+          heat: 86,
+        },
+        北大法宝: {
+          provider: "北大法宝",
+          scene: "法律咨询",
+          tags: ["法规", "司法案例", "权威检索"],
+          heat: 94,
+        },
+        企查查: {
+          provider: "企查查",
+          scene: "投资分析",
+          tags: ["工商", "股权", "风险"],
+          heat: 91,
+        },
+        通达信: {
+          provider: "通达信",
+          scene: "投资分析",
+          tags: ["证券行情", "市场数据", "投研"],
+          heat: 90,
+        },
+        腾讯地图: {
+          provider: "腾讯",
+          scene: "电商运营",
+          tags: ["地点", "路线", "周边服务"],
+          heat: 85,
+        },
+      };
+      connectors.forEach((connector) =>
+        Object.assign(connector, connectorDetails[connector.name]),
+      );
+
+      const state = {
+        view: "experts",
+        category: "全部",
+        sort: "综合",
+        connectorCategory: "全部",
+        connectorSort: "综合",
+        query: "",
+        installed: new Set(),
+      };
+      const views = {
+        experts: document.querySelector("#experts-view"),
+        connectors: document.querySelector("#connectors-view"),
+      };
+      const search = document.querySelector("#global-search");
+      const actionText = document.querySelector("#primary-action span");
+      const toast = document.querySelector("#toast");
+      const designGuide = document.querySelector("#design-guide");
+      const designGuideClose = document.querySelector("#design-guide-close");
+      let designGuideTrigger = null;
+
+      function openDesignGuide(event) {
+        designGuideTrigger = event.currentTarget;
+        designGuide.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+        designGuideClose.focus();
+      }
+
+      function closeDesignGuide() {
+        designGuide.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+        designGuideTrigger?.focus();
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.remove("translate-y-5", "opacity-0");
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(
+          () => toast.classList.add("translate-y-5", "opacity-0"),
+          1800,
+        );
+      }
+
+      function setView(view) {
+        state.view = view;
+        Object.entries(views).forEach(([key, node]) =>
+          node.classList.toggle("hidden", key !== view),
+        );
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) =>
+            item.classList.toggle("active", item.dataset.view === view),
+          );
+        const settings = {
+          experts: ["搜索专家名称或描述", "我的专家"],
+          connectors: ["搜索连接器名称或能力", "自定义连接器"],
+        };
+        search.placeholder = settings[view][0];
+        actionText.textContent = settings[view][1];
+        state.query = "";
+        search.value = "";
+        if (view === "experts") renderExperts();
+        if (view === "connectors") {
+          renderConnectorFilters();
+          renderConnectors();
+        }
+      }
+
+      function sceneTemplate(
+        scene,
+        activeCategory = state.category,
+        className = "scene-filter",
+      ) {
+        const active = activeCategory === scene.name;
+        return `<button class="${className} group relative min-h-[118px] overflow-hidden rounded-[14px] border text-left transition duration-200 ${active ? "border-ink ring-2 ring-ink/10 shadow-card" : "border-line bg-fog hover:-translate-y-0.5 hover:border-line hover:shadow-card"}" data-category="${scene.name}">
+          <img src="${scene.image}" alt="" class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+          <span class="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-white/5"></span>
+          <span class="relative z-10 flex min-h-[118px] max-w-[72%] flex-col justify-end p-3.5">
+            <strong class="block text-[13px] font-semibold text-ink">${scene.name}</strong>
+            <small class="mt-1 block truncate text-[10px] text-muted">${scene.desc}</small>
+          </span>
+          ${active ? '<span class="absolute right-2 top-2 z-10 grid size-5 place-items-center rounded-full bg-ink text-[10px] text-white shadow-sm">✓</span>' : ""}
+        </button>`;
+      }
+
+      function setExpertCategory(category, scrollToResults = false) {
+        state.category = category;
+        renderSceneFilters();
+        renderExperts();
+        if (scrollToResults)
+          document
+            .querySelector("#expert-grid")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function renderSceneFilters() {
+        document.querySelector("#scene-filter-grid").innerHTML = scenes
+          .map(sceneTemplate)
+          .join("");
+        document.querySelector("#expert-categories").innerHTML = [
+          "全部",
+          ...scenes.map((scene) => scene.name),
+        ]
+          .map(
+            (category) =>
+              `<button class="category rounded-full px-3 py-1.5 text-[11px] font-medium transition ${state.category === category ? "bg-ink text-white" : "bg-fog text-muted hover:text-ink"}" data-category="${category}">${category}</button>`,
+          )
+          .join("");
+      }
+
+      function expertTemplate(item) {
+        return `<article class="expert-card group rounded-[14px] border border-line bg-white/95 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-line hover:bg-white hover:shadow-card">
+          <div class="flex items-start gap-3">
+            <div class="grid size-10 shrink-0 place-items-center rounded-[12px] text-[12px] font-semibold" style="background:${item.tone};color:${item.ink}">${item.avatar}</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2"><div><h3 class="truncate text-[14px] font-semibold tracking-[-0.02em]">${item.name}</h3><p class="mt-0.5 text-[10px] text-[#90949C]">由 ${item.author} 提供</p></div><button class="grid size-7 shrink-0 place-items-center rounded-full border border-line text-muted opacity-0 transition hover:border-cobalt hover:text-cobalt group-hover:opacity-100" aria-label="添加 ${item.name}">＋</button></div>
+              <p class="mt-2 line-clamp-2 min-h-9 text-[11px] leading-[18px] text-muted">${item.desc}</p>
+              <div class="mt-2.5 flex flex-wrap gap-1">${item.tags.map((tag) => `<span class="rounded-md bg-fog px-1.5 py-0.5 text-[9px] text-[#777C85]">${tag}</span>`).join("")}</div>
+            </div>
+          </div>
+        </article>`;
+      }
+
+      function renderExperts() {
+        let items = experts.filter(
+          (item) =>
+            (state.category === "全部" || item.category === state.category) &&
+            `${item.name}${item.author}${item.desc}${item.tags.join("")}`
+              .toLowerCase()
+              .includes(state.query.toLowerCase()),
+        );
+        if (state.sort === "最热") items.sort((a, b) => b.heat - a.heat);
+        if (state.sort === "最新") items.reverse();
+        document.querySelector("#expert-grid").innerHTML = items
+          .map(expertTemplate)
+          .join("");
+        document
+          .querySelector("#expert-empty")
+          .classList.toggle("hidden", items.length > 0);
+      }
+
+      function renderConnectorFilters() {
+        document.querySelector("#connector-scene-grid").innerHTML = scenes
+          .map((scene) =>
+            sceneTemplate(
+              scene,
+              state.connectorCategory,
+              "connector-scene-filter",
+            ),
+          )
+          .join("");
+        document.querySelector("#connector-categories").innerHTML = [
+          "全部",
+          ...scenes.map((scene) => scene.name),
+        ]
+          .map(
+            (category) =>
+              `<button class="connector-category rounded-full px-3 py-1.5 text-[11px] font-medium transition ${state.connectorCategory === category ? "bg-ink text-white" : "bg-fog text-muted hover:text-ink"}" data-category="${category}">${category}</button>`,
+          )
+          .join("");
+      }
+
+      function setConnectorCategory(category, scrollToResults = false) {
+        state.connectorCategory = category;
+        renderConnectorFilters();
+        renderConnectors();
+        if (scrollToResults)
+          document
+            .querySelector("#connector-grid")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function connectorTemplate(item) {
+        const installed = state.installed.has(item.name);
+        return `<article class="connector-card group rounded-[14px] border border-line bg-white/95 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-line hover:bg-white hover:shadow-card" data-name="${item.name}">
+          <div class="flex items-start gap-3">
+            <div class="grid size-10 shrink-0 place-items-center rounded-[12px] text-[12px] font-semibold shadow-sm" style="background:${item.bg};color:${item.color}">${item.icon}</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-2"><div><h3 class="truncate text-[14px] font-semibold tracking-[-0.02em]">${item.name}</h3><p class="mt-0.5 text-[10px] text-[#90949C]">由 ${item.provider} 提供 · ${item.scene}</p></div><button class="install grid size-7 shrink-0 place-items-center rounded-full ${installed ? "bg-ink text-white" : "border border-line bg-white text-muted opacity-0 group-hover:opacity-100"} transition hover:border-cobalt hover:text-cobalt" aria-label="${installed ? "移除" : "添加"} ${item.name}">${installed ? "✓" : "＋"}</button></div>
+              <p class="mt-2 line-clamp-2 min-h-9 text-[11px] leading-[18px] text-muted">${item.desc}</p>
+              <div class="mt-2.5 flex flex-wrap gap-1">${item.tags.map((tag) => `<span class="rounded-md bg-fog px-1.5 py-0.5 text-[9px] text-[#777C85]">${tag}</span>`).join("")}</div>
+            </div>
+          </div>
+        </article>`;
+      }
+
+      function renderConnectors() {
+        let items = connectors.filter(
+          (item) =>
+            (state.connectorCategory === "全部" ||
+              item.scene === state.connectorCategory) &&
+            `${item.name}${item.provider}${item.scene}${item.desc}${item.tags.join("")}`
+              .toLowerCase()
+              .includes(state.query.toLowerCase()),
+        );
+        if (state.connectorSort === "最热")
+          items.sort((a, b) => b.heat - a.heat);
+        if (state.connectorSort === "最新") items.reverse();
+        document.querySelector("#connector-grid").innerHTML = items
+          .map(connectorTemplate)
+          .join("");
+        document
+          .querySelector("#connector-empty")
+          .classList.toggle("hidden", items.length > 0);
+      }
+
+      document
+        .querySelectorAll(".nav-item")
+        .forEach((item) =>
+          item.addEventListener("click", () => setView(item.dataset.view)),
+        );
+      document
+        .querySelector("#scene-filter-grid")
+        .addEventListener("click", (event) => {
+          const item = event.target.closest(".scene-filter");
+          if (item) setExpertCategory(item.dataset.category, true);
+        });
+      document
+        .querySelector("#expert-categories")
+        .addEventListener("click", (event) => {
+          const item = event.target.closest(".category");
+          if (item) setExpertCategory(item.dataset.category);
+        });
+      document.querySelectorAll(".sort").forEach((item) =>
+        item.addEventListener("click", () => {
+          state.sort = item.dataset.sort;
+          document.querySelectorAll(".sort").forEach((button) => {
+            button.classList.toggle("font-semibold", button === item);
+            button.classList.toggle("text-ink", button === item);
+          });
+          renderExperts();
+        }),
+      );
+      document
+        .querySelector("#connector-scene-grid")
+        .addEventListener("click", (event) => {
+          const item = event.target.closest(".connector-scene-filter");
+          if (item) setConnectorCategory(item.dataset.category, true);
+        });
+      document
+        .querySelector("#connector-categories")
+        .addEventListener("click", (event) => {
+          const item = event.target.closest(".connector-category");
+          if (item) setConnectorCategory(item.dataset.category);
+        });
+      document.querySelectorAll(".connector-sort").forEach((item) =>
+        item.addEventListener("click", () => {
+          state.connectorSort = item.dataset.sort;
+          document.querySelectorAll(".connector-sort").forEach((button) => {
+            button.classList.toggle("font-semibold", button === item);
+            button.classList.toggle("text-ink", button === item);
+          });
+          renderConnectors();
+        }),
+      );
+      document
+        .querySelector("#connector-grid")
+        .addEventListener("click", (event) => {
+          const button = event.target.closest(".install");
+          if (!button) return;
+          const name = button.closest(".connector-card").dataset.name;
+          if (state.installed.has(name)) {
+            state.installed.delete(name);
+            showToast(`已移除 ${name}`);
+          } else {
+            state.installed.add(name);
+            showToast(`已添加 ${name}`);
+          }
+          renderConnectors();
+        });
+      document
+        .querySelector("#expert-grid")
+        .addEventListener("click", (event) => {
+          const button = event.target.closest("button");
+          if (button) showToast("专家已添加到你的工作台");
+        });
+      search.addEventListener("input", (event) => {
+        state.query = event.target.value.trim();
+        if (state.view === "experts") renderExperts();
+        if (state.view === "connectors") renderConnectors();
+      });
+      document
+        .querySelectorAll("#design-guide-button, #design-guide-fab")
+        .forEach((button) => button.addEventListener("click", openDesignGuide));
+      document
+        .querySelectorAll("#design-guide-close, #design-guide-backdrop")
+        .forEach((button) =>
+          button.addEventListener("click", closeDesignGuide),
+        );
+      document.addEventListener("keydown", (event) => {
+        if (
+          event.key === "Escape" &&
+          !designGuide.classList.contains("hidden")
+        ) {
+          closeDesignGuide();
+          return;
+        }
+        if (
+          (event.metaKey || event.ctrlKey) &&
+          event.key.toLowerCase() === "k"
+        ) {
+          event.preventDefault();
+          search.focus();
+        }
+      });
+      document
+        .querySelector("#primary-action")
+        .addEventListener("click", () =>
+          showToast(
+            state.view === "connectors"
+              ? "打开自定义连接器配置"
+              : "打开你的能力工作台",
+          ),
+        );
+      renderSceneFilters();
+      renderConnectorFilters();
+      renderExperts();
+      renderConnectors();
+    </script>
+  </body>
+</html>

@@ -21,6 +21,7 @@
 | [Agent Plugin](agent-plugin.md)              | 第 3.1–3.6 节      | 插件布局、manifest、MCP 承载、Skills 双通道与加载隔离                                 |
 | [MCP Mono Server](mcp-mono-server.md)        | 第 3.7 节          | HTTP 多端点与只读 Server Catalog                                                      |
 | [MCP Registry](mcp-registry.md)              | 第 4 章            | Registry / NPM / Dynamic Host / Mono Server 的衔接契约                                |
+| [MCPM Market](../MCPM_MARKET.md)             | 市场权威设计       | Connector NPM 包、专家团队、Packument 元数据投影与 MCPM 边界                          |
 | [MCP Skills 与 Agents](mcp-skills.md)        | 第 5 章            | Skill / Agent 资源格式、发现、校验、编排与激活                                        |
 | [MCP Tools](mcp-tools.md)                    | 第 6 章            | Tool 元数据、命名、状态、错误与懒加载                                                 |
 | [MCP Resources 发现与缓存](mcp-resources.md) | 第 7 章            | Resource 发现、annotations、MCPP Cache 与分页                                         |

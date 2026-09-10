@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="MCPP Market 是开放的 AI 能力市场，让用户按场景发现专家并连接真实工具与数据。"
+    />
+    <title>MCPP Market · 让 AI 真正完成工作</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#17191C",
+              muted: "#686D76",
+              line: "#E7E9EE",
+              fog: "#F5F6F8",
+              cobalt: "#315CEC",
+              paper: "#FCFCFB",
+              coral: "#F0643C",
+            },
+            fontFamily: {
+              sans: [
+                "Inter",
+                "ui-sans-serif",
+                "PingFang SC",
+                "Microsoft YaHei",
+                "sans-serif",
+              ],
+            },
+            boxShadow: {
+              card: "0 18px 48px rgba(20, 24, 35, 0.08)",
+              soft: "0 8px 28px rgba(20, 24, 35, 0.06)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family:
+          Inter, ui-sans-serif, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      .grid-paper {
+        background-image: radial-gradient(
+          rgba(23, 25, 28, 0.1) 0.65px,
+          transparent 0.65px
+        );
+        background-size: 18px 18px;
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 650ms ease,
+          transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation: none !important;
+          transition: none !important;
+        }
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-white text-ink antialiased selection:bg-[#DFE7FF]">
+    <header
+      class="sticky top-0 z-50 border-b border-line bg-white/90 backdrop-blur-xl"
+    >
+      <div class="mx-auto flex h-16 max-w-[1280px] items-center px-5 md:px-7">
+        <a
+          href="#top"
+          class="flex items-center gap-2.5"
+          aria-label="MCPP Market 首页"
+        >
+          <img
+            src="images/img_mcpp_market_brand_icon.png"
+            alt=""
+            class="size-8 rounded-[9px] border border-line object-cover shadow-sm"
+          />
+          <span class="text-[18px] font-semibold tracking-[-0.03em]"
+            >MCPP Market</span
+          >
+        </a>
+        <nav
+          class="ml-12 hidden items-center gap-8 text-[12px] text-muted lg:flex"
+          aria-label="主导航"
+        >
+          <a class="transition hover:text-ink" href="#product">产品</a>
+          <a class="transition hover:text-ink" href="#scenes">场景</a>
+          <a class="transition hover:text-ink" href="#ecosystem">生态</a>
+          <a class="transition hover:text-ink" href="#security">安全</a>
+        </nav>
+        <div class="ml-auto flex items-center gap-1.5">
+          <a
+            href="https://open.workbuddy.cn/"
+            class="hidden rounded-lg px-3 py-2 text-[12px] text-muted transition hover:bg-fog hover:text-ink md:block"
+            >开放平台</a
+          >
+          <a
+            href="mcpp-market-marketplace.html"
+            class="hidden rounded-lg px-3 py-2 text-[12px] text-muted transition hover:bg-fog hover:text-ink sm:block"
+            >能力市场</a
+          >
+          <a
+            href="#start"
+            class="ml-1 rounded-lg bg-ink px-4 py-2.5 text-[12px] font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-soft"
+            >立即体验</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="relative overflow-hidden border-b border-line">
+        <div class="absolute inset-0 grid-paper opacity-30"></div>
+        <div
+          class="relative mx-auto grid min-h-[680px] max-w-[1280px] items-center gap-10 px-5 py-20 md:px-7 lg:grid-cols-[0.82fr_1.18fr] lg:py-24"
+        >
+          <div class="relative z-10">
+            <div
+              class="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-[10px] font-semibold text-muted shadow-sm"
+            >
+              <span class="size-1.5 rounded-full bg-cobalt"></span>
+              开放协议驱动 · AI 专家与连接器市场
+            </div>
+            <h1
+              class="mt-7 max-w-[620px] text-[48px] font-semibold leading-[1.04] tracking-[-0.06em] sm:text-[60px] lg:text-[68px]"
+            >
+              交代目标。<br />剩下的，<span class="text-cobalt">交给它。</span>
+            </h1>
+            <p class="mt-6 max-w-[560px] text-[15px] leading-7 text-muted">
+              MCPP Market
+              不止回答问题。它会理解目标、自主拆解、连接你的工具和数据，最终交付文档、分析、代码与设计成果。
+            </p>
+            <div class="mt-8 flex flex-wrap gap-3">
+              <a
+                href="#start"
+                class="inline-flex items-center gap-2 rounded-xl bg-cobalt px-5 py-3.5 text-[13px] font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#254FD9] hover:shadow-card"
+                >免费开始 <span>→</span></a
+              >
+              <a
+                href="mcpp-market-marketplace.html"
+                class="rounded-xl border border-line bg-white px-5 py-3.5 text-[13px] font-semibold transition hover:border-[#C9CDD5] hover:shadow-soft"
+                >探索能力市场</a
+              >
+            </div>
+            <div
+              class="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-[10px] text-muted"
+            >
+              <span class="flex items-center gap-2"
+                ><i class="size-1 rounded-full bg-[#27A36A]"></i
+                >可直接验收的交付物</span
+              >
+              <span class="flex items-center gap-2"
+                ><i class="size-1 rounded-full bg-[#27A36A]"></i
+                >过程透明可追踪</span
+              >
+              <span class="flex items-center gap-2"
+                ><i class="size-1 rounded-full bg-[#27A36A]"></i
+                >关键操作由你确认</span
+              >
+            </div>
+          </div>
+
+          <div class="relative lg:-mr-16">
+            <div
+              class="relative overflow-hidden rounded-[28px] border border-line bg-white p-2 shadow-card"
+            >
+              <img
+                src="images/img_landing_hero_light.png"
+                alt="AI 调度文档、数据、代码和设计工具完成工作的浅色抽象视觉"
+                class="aspect-[3/2] w-full rounded-[21px] object-cover"
+              />
+              <div
+                class="absolute left-6 top-6 rounded-xl border border-line bg-white/90 p-3 shadow-soft backdrop-blur"
+              >
+                <span class="text-[9px] text-muted">任务 07</span>
+                <strong class="mt-1 block text-[11px]">生成季度经营复盘</strong>
+              </div>
+              <div
+                class="absolute inset-x-6 bottom-6 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border border-line bg-white/92 p-4 shadow-soft backdrop-blur"
+              >
+                <span
+                  class="grid size-9 place-items-center rounded-xl bg-[#E8F4EF] text-[#23815F]"
+                  >✓</span
+                >
+                <div>
+                  <strong class="block text-[12px]">复盘报告已完成</strong
+                  ><span class="mt-0.5 block text-[9px] text-muted"
+                    >12 个数据源 · 18 页 · 可直接编辑</span
+                  >
+                </div>
+                <span
+                  class="hidden rounded-full bg-fog px-3 py-1.5 text-[9px] text-muted sm:block"
+                  >查看交付物</span
+                >
+              </div>
+            </div>
+            <div
+              class="absolute -left-5 top-1/2 hidden -translate-y-1/2 rounded-xl border border-line bg-white p-3 shadow-soft md:block"
+            >
+              <span class="text-[9px] text-muted">执行进度</span>
+              <div class="mt-2 flex items-center gap-2">
+                <span class="size-1.5 rounded-full bg-cobalt"></span
+                ><strong class="text-[10px]">正在核对数据来源</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-b border-line bg-paper">
+        <div
+          class="mx-auto grid max-w-[1280px] grid-cols-2 divide-x divide-y divide-line px-5 md:grid-cols-4 md:divide-y-0 md:px-7"
+        >
+          <div class="py-6 pr-5 md:py-7">
+            <strong class="text-[24px] tracking-[-0.04em]">10</strong>
+            <p class="mt-1 text-[9px] text-muted">专业工作场景</p>
+          </div>
+          <div class="px-5 py-6 md:py-7">
+            <strong class="text-[24px] tracking-[-0.04em]">Experts</strong>
+            <p class="mt-1 text-[9px] text-muted">有边界的专业角色</p>
+          </div>
+          <div class="py-6 pr-5 md:px-5 md:py-7">
+            <strong class="text-[24px] tracking-[-0.04em]">Connectors</strong>
+            <p class="mt-1 text-[9px] text-muted">连接真实工具与数据</p>
+          </div>
+          <div class="px-5 py-6 md:py-7">
+            <strong class="text-[24px] tracking-[-0.04em]">MCP</strong>
+            <p class="mt-1 text-[9px] text-muted">开放能力协议</p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="product"
+        class="mx-auto max-w-[1280px] px-5 py-24 md:px-7 md:py-32"
+      >
+        <div
+          class="reveal grid gap-7 border-b border-line pb-10 lg:grid-cols-[0.75fr_1.25fr]"
+        >
+          <div>
+            <span class="font-mono text-[10px] text-cobalt"
+              >01 / HOW IT WORKS</span
+            >
+            <h2
+              class="mt-4 text-[38px] font-semibold leading-[1.1] tracking-[-0.05em] md:text-[48px]"
+            >
+              从一句话，<br />到一份交付物。
+            </h2>
+          </div>
+          <p class="max-w-[660px] self-end text-[14px] leading-7 text-muted">
+            你只负责描述目标。MCPP Market
+            将复杂工作拆成可检查的步骤，调用真实工具推进，并把过程与结果留在同一个工作空间。
+          </p>
+        </div>
+        <div
+          class="grid divide-y divide-line lg:grid-cols-3 lg:divide-x lg:divide-y-0"
+        >
+          <article class="reveal py-8 lg:pr-8">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-muted">STEP 01</span
+              ><span
+                class="grid size-7 place-items-center rounded-full bg-fog text-[11px]"
+                >↗</span
+              >
+            </div>
+            <h3 class="mt-10 text-[19px] font-semibold">理解目标</h3>
+            <p class="mt-3 text-[12px] leading-6 text-muted">
+              识别任务、上下文、约束与交付标准，而不是机械匹配关键词。
+            </p>
+          </article>
+          <article class="reveal py-8 lg:px-8">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-muted">STEP 02</span
+              ><span
+                class="grid size-7 place-items-center rounded-full bg-fog text-[11px]"
+                >⌁</span
+              >
+            </div>
+            <h3 class="mt-10 text-[19px] font-semibold">规划并执行</h3>
+            <p class="mt-3 text-[12px] leading-6 text-muted">
+              读取文件、搜索资料、运行代码、连接应用，持续推动任务完成。
+            </p>
+          </article>
+          <article class="reveal py-8 lg:pl-8">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-muted">STEP 03</span
+              ><span
+                class="grid size-7 place-items-center rounded-full bg-[#E8F4EF] text-[11px] text-[#23815F]"
+                >✓</span
+              >
+            </div>
+            <h3 class="mt-10 text-[19px] font-semibold">交付与验收</h3>
+            <p class="mt-3 text-[12px] leading-6 text-muted">
+              产出文档、表格、分析、代码和设计稿，让工作有明确终点。
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="border-y border-line bg-paper py-24 md:py-32">
+        <div
+          class="mx-auto grid max-w-[1280px] items-center gap-14 px-5 md:px-7 lg:grid-cols-[1.1fr_0.9fr]"
+        >
+          <div
+            class="reveal overflow-hidden rounded-[24px] border border-line bg-white p-2 shadow-soft"
+          >
+            <img
+              src="images/img_landing_workflow.png"
+              alt="任务被拆解、连接数据并形成交付物的流程图解"
+              class="aspect-[3/2] w-full rounded-[18px] object-cover"
+            />
+          </div>
+          <div class="reveal">
+            <span class="font-mono text-[10px] text-cobalt"
+              >02 / VISIBLE PROCESS</span
+            >
+            <h2
+              class="mt-4 text-[38px] font-semibold leading-[1.1] tracking-[-0.05em] md:text-[46px]"
+            >
+              工作不是黑箱，<br />每一步都有依据。
+            </h2>
+            <p class="mt-5 text-[13px] leading-6 text-muted">
+              任务计划、工具调用、信息来源和交付结果都清晰可见。你可以随时检查、调整或接管。
+            </p>
+            <div
+              class="mt-8 divide-y divide-line border-y border-line text-[11px]"
+            >
+              <div class="grid grid-cols-[80px_1fr_auto] items-center py-3.5">
+                <span class="text-muted">计划</span
+                ><strong>拆解为 6 个执行步骤</strong
+                ><span class="text-[#23815F]">完成</span>
+              </div>
+              <div class="grid grid-cols-[80px_1fr_auto] items-center py-3.5">
+                <span class="text-muted">资料</span
+                ><strong>检索并交叉验证来源</strong
+                ><span class="text-[#23815F]">完成</span>
+              </div>
+              <div class="grid grid-cols-[80px_1fr_auto] items-center py-3.5">
+                <span class="text-muted">交付</span
+                ><strong>生成可编辑结果</strong
+                ><span class="text-cobalt">进行中</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="scenes"
+        class="mx-auto max-w-[1280px] px-5 py-24 md:px-7 md:py-32"
+      >
+        <div
+          class="reveal flex flex-col gap-5 md:flex-row md:items-end md:justify-between"
+        >
+          <div>
+            <span class="font-mono text-[10px] text-cobalt"
+              >03 / REAL WORK</span
+            >
+            <h2
+              class="mt-4 text-[38px] font-semibold tracking-[-0.05em] md:text-[48px]"
+            >
+              为不同工作，配置不同能力。
+            </h2>
+          </div>
+          <a
+            href="mcpp-market-marketplace.html"
+            class="text-[12px] font-semibold text-cobalt"
+            >查看十个场景 →</a
+          >
+        </div>
+        <div class="mt-12 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <article
+            class="reveal group relative min-h-[260px] overflow-hidden rounded-[22px] border border-line"
+          >
+            <img
+              src="images/img_content_creation_s02.png"
+              alt=""
+              class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-white via-white/55 to-transparent"
+            ></div>
+            <div class="absolute inset-x-0 bottom-0 p-6">
+              <span class="font-mono text-[9px] text-muted">CONTENT</span>
+              <h3 class="mt-2 text-[19px] font-semibold">内容创作</h3>
+              <p class="mt-1 text-[11px] text-muted">
+                研究选题、统一风格、完成多渠道内容
+              </p>
+            </div>
+          </article>
+          <article
+            class="reveal group relative min-h-[260px] overflow-hidden rounded-[22px] border border-line"
+          >
+            <img
+              src="images/img_data_analysis_s07.png"
+              alt=""
+              class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-white via-white/55 to-transparent"
+            ></div>
+            <div class="absolute inset-x-0 bottom-0 p-6">
+              <span class="font-mono text-[9px] text-muted">ANALYTICS</span>
+              <h3 class="mt-2 text-[19px] font-semibold">数据分析</h3>
+              <p class="mt-1 text-[11px] text-muted">
+                清洗数据、识别问题、形成行动建议
+              </p>
+            </div>
+          </article>
+          <article
+            class="reveal group relative min-h-[260px] overflow-hidden rounded-[22px] border border-line"
+          >
+            <img
+              src="images/img_engineering_development_s10.png"
+              alt=""
+              class="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-white via-white/55 to-transparent"
+            ></div>
+            <div class="absolute inset-x-0 bottom-0 p-6">
+              <span class="font-mono text-[9px] text-muted">ENGINEERING</span>
+              <h3 class="mt-2 text-[19px] font-semibold">工程开发</h3>
+              <p class="mt-1 text-[11px] text-muted">
+                理解代码、实现功能、运行测试并交付
+              </p>
+            </div>
+          </article>
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            class="reveal flex items-center justify-between rounded-[16px] border border-line p-4"
+          >
+            <span class="text-[12px] font-medium">专业文档</span
+            ><span class="text-muted">→</span>
+          </div>
+          <div
+            class="reveal flex items-center justify-between rounded-[16px] border border-line p-4"
+          >
+            <span class="text-[12px] font-medium">投资分析</span
+            ><span class="text-muted">→</span>
+          </div>
+          <div
+            class="reveal flex items-center justify-between rounded-[16px] border border-line p-4"
+          >
+            <span class="text-[12px] font-medium">产品设计</span
+            ><span class="text-muted">→</span>
+          </div>
+          <div
+            class="reveal flex items-center justify-between rounded-[16px] border border-line p-4"
+          >
+            <span class="text-[12px] font-medium">法律咨询</span
+            ><span class="text-muted">→</span>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="ecosystem"
+        class="border-y border-line bg-white py-24 md:py-32"
+      >
+        <div class="mx-auto max-w-[1280px] px-5 md:px-7">
+          <div class="reveal grid gap-7 lg:grid-cols-2">
+            <div>
+              <span class="font-mono text-[10px] text-cobalt"
+                >04 / CAPABILITY MARKET</span
+              >
+              <h2
+                class="mt-4 text-[38px] font-semibold leading-[1.1] tracking-[-0.05em] md:text-[48px]"
+              >
+                专家负责判断，<br />连接器负责行动。
+              </h2>
+            </div>
+            <p class="max-w-xl self-end text-[13px] leading-6 text-muted">
+              场景是共同入口。选择需要完成的工作，找到懂行的专家，再连接完成任务需要的数据与工具。
+            </p>
+          </div>
+          <div class="mt-12 grid gap-4 lg:grid-cols-2">
+            <article
+              class="reveal rounded-[24px] border border-line bg-paper p-7 md:p-8"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[10px] text-muted">EXPERTS</span
+                ><span
+                  class="rounded-full border border-line bg-white px-3 py-1.5 text-[9px]"
+                  >角色与决策</span
+                >
+              </div>
+              <h3 class="mt-8 text-[25px] font-semibold tracking-[-0.04em]">
+                不是通用机器人，<br />是有明确边界的专业角色。
+              </h3>
+              <div class="mt-8 grid grid-cols-2 gap-2 text-[11px]">
+                <div class="rounded-xl border border-line bg-white p-3">
+                  <span class="text-muted">投资分析</span
+                  ><strong class="mt-1 block">行业研究员</strong>
+                </div>
+                <div class="rounded-xl border border-line bg-white p-3">
+                  <span class="text-muted">产品设计</span
+                  ><strong class="mt-1 block">体验设计师</strong>
+                </div>
+                <div class="rounded-xl border border-line bg-white p-3">
+                  <span class="text-muted">法律咨询</span
+                  ><strong class="mt-1 block">合同审阅专家</strong>
+                </div>
+                <div class="rounded-xl border border-line bg-white p-3">
+                  <span class="text-muted">工程开发</span
+                  ><strong class="mt-1 block">全栈开发专家</strong>
+                </div>
+              </div>
+            </article>
+            <article
+              class="reveal rounded-[24px] border border-line bg-[#F2F5FD] p-7 md:p-8"
+            >
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-[10px] text-muted">CONNECTORS</span
+                ><span
+                  class="rounded-full border border-[#DCE3F5] bg-white px-3 py-1.5 text-[9px]"
+                  >数据与动作</span
+                >
+              </div>
+              <h3 class="mt-8 text-[25px] font-semibold tracking-[-0.04em]">
+                不用复制粘贴，<br />让 AI 进入真实工作环境。
+              </h3>
+              <div class="mt-8 grid grid-cols-4 gap-2 text-center text-[9px]">
+                <div class="rounded-xl border border-[#E0E5F1] bg-white p-3">
+                  <span
+                    class="mx-auto grid size-8 place-items-center rounded-lg bg-[#EAF2FF] text-cobalt"
+                    >文</span
+                  ><strong class="mt-2 block">腾讯文档</strong>
+                </div>
+                <div class="rounded-xl border border-[#E0E5F1] bg-white p-3">
+                  <span
+                    class="mx-auto grid size-8 place-items-center rounded-lg bg-[#EEEFFF] text-[#5C64E7]"
+                    >乐</span
+                  ><strong class="mt-2 block">乐享</strong>
+                </div>
+                <div class="rounded-xl border border-[#E0E5F1] bg-white p-3">
+                  <span
+                    class="mx-auto grid size-8 place-items-center rounded-lg bg-[#EAF4FF] text-[#3388FF]"
+                    >Q</span
+                  ><strong class="mt-2 block">QQ 邮箱</strong>
+                </div>
+                <div class="rounded-xl border border-[#E0E5F1] bg-white p-3">
+                  <span
+                    class="mx-auto grid size-8 place-items-center rounded-lg bg-[#E6F6EF] text-[#20A46B]"
+                    >C</span
+                  ><strong class="mt-2 block">CNB</strong>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="security"
+        class="mx-auto grid max-w-[1280px] gap-14 px-5 py-24 md:px-7 md:py-32 lg:grid-cols-[0.75fr_1.25fr]"
+      >
+        <div class="reveal">
+          <span class="font-mono text-[10px] text-cobalt">05 / CONTROL</span>
+          <h2
+            class="mt-4 text-[38px] font-semibold leading-[1.1] tracking-[-0.05em] md:text-[48px]"
+          >
+            能干活，<br />也有边界。
+          </h2>
+          <p class="mt-5 text-[13px] leading-6 text-muted">
+            授权范围透明、敏感操作确认、连接随时撤销、过程完整可查。
+          </p>
+        </div>
+        <div class="reveal divide-y divide-line border-y border-line">
+          <div
+            class="grid grid-cols-[36px_1fr] gap-4 py-5 sm:grid-cols-[36px_160px_1fr]"
+          >
+            <span class="font-mono text-[10px] text-cobalt">01</span
+            ><strong class="text-[13px]">最小权限</strong>
+            <p class="text-[11px] leading-5 text-muted">
+              只申请完成当前任务所需要的数据范围与动作。
+            </p>
+          </div>
+          <div
+            class="grid grid-cols-[36px_1fr] gap-4 py-5 sm:grid-cols-[36px_160px_1fr]"
+          >
+            <span class="font-mono text-[10px] text-cobalt">02</span
+            ><strong class="text-[13px]">关键确认</strong>
+            <p class="text-[11px] leading-5 text-muted">
+              发送、修改和删除等敏感操作由你最终决定。
+            </p>
+          </div>
+          <div
+            class="grid grid-cols-[36px_1fr] gap-4 py-5 sm:grid-cols-[36px_160px_1fr]"
+          >
+            <span class="font-mono text-[10px] text-cobalt">03</span
+            ><strong class="text-[13px]">可撤销、可追踪</strong>
+            <p class="text-[11px] leading-5 text-muted">
+              连接统一管理，完整保留信息来源和操作过程。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="border-y border-line bg-paper py-20">
+        <div
+          class="reveal mx-auto flex max-w-[1280px] flex-col gap-8 px-5 md:flex-row md:items-center md:justify-between md:px-7"
+        >
+          <div>
+            <span class="font-mono text-[10px] text-cobalt"
+              >OPEN ECOSYSTEM</span
+            >
+            <h2 class="mt-3 text-[28px] font-semibold tracking-[-0.04em]">
+              把你的专业能力，带给更多用户。
+            </h2>
+            <p class="mt-2 max-w-2xl text-[12px] leading-6 text-muted">
+              通过开放平台，将行业 Know-How、专业数据与业务服务转化为 MCPP
+              Market 生态产品。
+            </p>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <a
+              href="https://open.workbuddy.cn/"
+              class="rounded-xl bg-ink px-5 py-3 text-[12px] font-semibold text-white"
+              >加入开放生态</a
+            ><a
+              href="https://open.workbuddy.cn/docs/what-is-open-platform"
+              class="rounded-xl border border-line bg-white px-5 py-3 text-[12px] font-semibold"
+              >开放文档</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="start"
+        class="mx-auto max-w-[1280px] px-5 py-24 md:px-7 md:py-32"
+      >
+        <div
+          class="reveal relative overflow-hidden rounded-[30px] border border-line bg-white px-6 py-16 text-center shadow-soft md:px-12 md:py-20"
+        >
+          <div class="absolute inset-0 grid-paper opacity-25"></div>
+          <div class="relative">
+            <span class="font-mono text-[10px] text-cobalt"
+              >START WITH ONE SENTENCE</span
+            >
+            <h2
+              class="mx-auto mt-5 max-w-4xl text-[42px] font-semibold leading-[1.05] tracking-[-0.055em] md:text-[58px]"
+            >
+              把下一件工作，交给 MCPP Market。
+            </h2>
+            <p class="mx-auto mt-5 max-w-2xl text-[13px] leading-6 text-muted">
+              无需学习复杂指令。从一句话开始，看着目标被拆解、工具被调用、结果被交付。
+            </p>
+            <div class="mt-8 flex flex-wrap justify-center gap-3">
+              <a
+                href="mcpp-market-marketplace.html"
+                class="rounded-xl bg-cobalt px-6 py-3.5 text-[13px] font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-card"
+                >进入能力市场</a
+              ><a
+                href="https://cloud.tencent.com/product/workbuddy"
+                class="rounded-xl border border-line bg-white px-6 py-3.5 text-[13px] font-semibold transition hover:border-[#C9CDD5]"
+                >了解产品与下载</a
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-line">
+      <div
+        class="mx-auto flex max-w-[1280px] flex-col gap-6 px-5 py-10 md:flex-row md:items-center md:px-7"
+      >
+        <div class="flex items-center gap-2.5">
+          <img
+            src="images/img_mcpp_market_brand_icon.png"
+            alt=""
+            class="size-7 rounded-lg border border-line object-cover"
+          /><strong>MCPP Market</strong>
+        </div>
+        <p class="text-[10px] text-muted">开放的 AI 专家与连接器能力市场</p>
+        <div class="flex gap-6 text-[10px] text-muted md:ml-auto">
+          <a class="hover:text-ink" href="mcpp-market-marketplace.html"
+            >能力市场</a
+          ><a class="hover:text-ink" href="https://open.workbuddy.cn/"
+            >开放平台</a
+          ><a
+            class="hover:text-ink"
+            href="https://open.workbuddy.cn/docs/what-is-open-platform"
+            >开放文档</a
+          >
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const observer = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          }),
+        { threshold: 0.1 },
+      );
+      document
+        .querySelectorAll(".reveal")
+        .forEach((item) => observer.observe(item));
+    </script>
+  </body>
+</html>
