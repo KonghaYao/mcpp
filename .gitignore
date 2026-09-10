@@ -11,3 +11,5 @@ examples/mcp-registry/data/
 coverage/
 *.tgz
 .claude/
+.peri/
+handoffs/
