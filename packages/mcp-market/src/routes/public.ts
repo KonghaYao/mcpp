@@ -1,112 +1,200 @@
-import { Hono } from "hono";
-import type { Db } from "../db/database.ts";
-import { assert } from "../errors.ts";
-import { configProjection } from "../services/catalog.ts";
-const visible = "i.status='active' AND l.revision_id IS NOT NULL";
-export function publicRoutes(db: Db) {
-  const r = new Hono();
-  r.get("/backends", (c) =>
-    c.json({
-      items: db
-        .query(
-          "SELECT slug,display_name displayName,description,website_url websiteUrl FROM backend_registries WHERE status='active' ORDER BY slug",
-        )
-        .all(),
+/**
+ * Anonymous read-only surface.
+ *
+ * Every route is a GET. A request never touches the Registry, so the public
+ * read path keeps working while the Registry is down. Pages are served from the
+ * pre-rendered cache when present and rendered on demand otherwise, which keeps
+ * the site correct even if the cache was never built or was deleted.
+ *
+ * A catalogue that cannot be read is reported as a temporary failure, never as a
+ * withdrawal. Turning a failed lookup into 404 would delist a package that is
+ * still published, and reading the disk copy instead is exactly the documented
+ * degradation.
+ */
+
+import { Hono, type Context } from "hono";
+import type { AppEnv } from "../env.ts";
+import { MAX_PAGE_SIZE, type CatalogService } from "../catalog/service.ts";
+import { fromPackageSlug } from "../catalog/slug.ts";
+import {
+  renderHome,
+  renderList,
+  renderNotFound,
+  renderPackage,
+  renderSearch,
+  renderUnavailable,
+  renderVersion,
+} from "../public-site/render.ts";
+import {
+  HOME_PATH,
+  MARKET_PATH,
+  packagePath,
+  versionPath,
+  type PublicSiteService,
+} from "../public-site/service.ts";
+import { MAX_SEARCH_QUERY_LENGTH } from "../search-text.ts";
+
+const HTML = { "Content-Type": "text/html; charset=utf-8" } as const;
+const PAGE_CACHE = "public, max-age=60";
+const NO_STORE = "no-store";
+
+/**
+ * Returned when the catalogue itself could not be read, as opposed to answering
+ * "no such package". The two must never be conflated: one is a temporary
+ * failure, the other is a withdrawal.
+ */
+const UNAVAILABLE = Symbol("catalogue-unavailable");
+
+/** Reads the catalogue, converting a failed lookup into {@link UNAVAILABLE}. */
+const read = <T>(lookup: () => T): T | typeof UNAVAILABLE => {
+  try {
+    return lookup();
+  } catch (error) {
+    console.error("[catalogue-unavailable]", error);
+    return UNAVAILABLE;
+  }
+};
+
+const positiveQuery = (value: string | undefined): number | undefined => {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+};
+
+export const publicRoutes = (
+  catalog: CatalogService,
+  publicSite: PublicSiteService,
+  homepageUrl: string | null,
+): Hono<AppEnv> => {
+  const routes = new Hono<AppEnv>();
+
+  /** The document that was already written, or null when there is none. */
+  const cached = (relPath: string): Promise<string | null> =>
+    publicSite.store.read(relPath).catch(() => null);
+
+  const document = (c: Context<AppEnv>, body: string): Response =>
+    c.body(body, 200, { ...HTML, "Cache-Control": PAGE_CACHE });
+
+  const unavailable = (c: Context<AppEnv>): Response =>
+    c.body(renderUnavailable(), 503, { ...HTML, "Cache-Control": NO_STORE });
+
+  const notFound = (c: Context<AppEnv>): Response =>
+    c.body(renderNotFound(), 404, { ...HTML, "Cache-Control": NO_STORE });
+
+  /**
+   * Cache first: serving a page that was already written never touches SQLite,
+   * which is what keeps the public surface up while the database is not.
+   */
+  const serve = async (
+    c: Context<AppEnv>,
+    relPath: string,
+    render: () => Response,
+  ): Promise<Response> => {
+    const written = await cached(relPath);
+    return written !== null ? document(c, written) : render();
+  };
+
+  /** The last written page, or a temporary failure when none exists. */
+  const stale = async (
+    c: Context<AppEnv>,
+    relPath: string,
+  ): Promise<Response> => {
+    const written = await cached(relPath);
+    return written === null ? unavailable(c) : document(c, written);
+  };
+
+  routes.get("/", (c) =>
+    serve(c, HOME_PATH, () => {
+      const featured = read(() => catalog.listFeatured(6));
+      return featured === UNAVAILABLE
+        ? unavailable(c)
+        : document(c, renderHome(featured));
     }),
   );
-  r.get("/backends/:slug", (c) => {
-    const x = db
-      .query(
-        "SELECT slug,display_name displayName,description,website_url websiteUrl FROM backend_registries WHERE slug=? AND status='active'",
-      )
-      .get(c.req.param("slug"));
-    assert(x, 404, "BACKEND_NOT_FOUND");
-    return c.json(x);
+
+  /**
+   * The catalogue page is a pre-rendered document, so it deliberately offers no
+   * `limit`/`offset` controls: a page number in the URL would be answered with
+   * the same cached file every time. Rendering on demand asks for the same batch
+   * the pre-renderer writes, so one URL cannot show two different sets depending
+   * on whether the cache happened to hold the document.
+   */
+  routes.get("/market", (c) =>
+    serve(c, MARKET_PATH, () => {
+      const results = read(() => catalog.listPublic({ limit: MAX_PAGE_SIZE }));
+      return results === UNAVAILABLE
+        ? unavailable(c)
+        : document(
+            c,
+            renderList({ items: results.items, total: results.total }),
+          );
+    }),
+  );
+
+  routes.get("/market/:slug", async (c) => {
+    const slug = c.req.param("slug");
+    if (fromPackageSlug(slug) === null) return notFound(c);
+
+    const detail = read(() => catalog.getPublicPackage(slug));
+    // Visibility is settled before the cache is consulted so that a leftover
+    // file can never keep serving a withdrawn package.
+    if (detail === null) return notFound(c);
+    if (detail === UNAVAILABLE) return stale(c, packagePath(slug));
+
+    return serve(c, packagePath(slug), () =>
+      document(c, renderPackage({ detail, homepageUrl })),
+    );
   });
-  r.get("/items", (c) => {
-    const q = c.req.query(),
-      limit = Math.min(Math.max(Number(q.limit) || 50, 1), 100),
-      like = `%${q.q ?? ""}%`;
-    return c.json({
-      items: db
-        .query(
-          `SELECT i.slug,i.display_name displayName,i.summary,p.slug publisher,b.slug backend,r.version latestVersion FROM mcp_items i JOIN publishers p ON p.id=i.publisher_id JOIN backend_registries b ON b.id=i.backend_registry_id JOIN mcp_item_latest l ON l.item_id=i.id JOIN mcp_item_revisions r ON r.id=l.revision_id WHERE ${visible} AND (?='' OR b.slug=?) AND (?='' OR p.slug=?) AND (?='' OR i.slug LIKE ? OR i.display_name LIKE ? OR COALESCE(i.summary,'') LIKE ?) ORDER BY i.slug LIMIT ?`,
-        )
-        .all(
-          q.backend ?? "",
-          q.backend ?? "",
-          q.publisher ?? "",
-          q.publisher ?? "",
-          q.q ?? "",
-          like,
-          like,
-          like,
-          limit,
-        ),
-    });
+
+  routes.get("/market/:slug/v/:version", async (c) => {
+    const slug = c.req.param("slug");
+    const version = c.req.param("version");
+    if (fromPackageSlug(slug) === null) return notFound(c);
+
+    const rendered = read(() => catalog.getPublicVersion(slug, version));
+    if (rendered === null) return notFound(c);
+    if (rendered === UNAVAILABLE) return stale(c, versionPath(slug, version));
+
+    return serve(c, versionPath(slug, version), () =>
+      document(
+        c,
+        renderVersion({
+          slug,
+          packageName: rendered.packageName,
+          sourceId: rendered.sourceId,
+          version: rendered.version,
+          publishedAt: rendered.publishedAt,
+          isLatest: rendered.isLatest,
+          metadata: rendered.metadata,
+          homepageUrl,
+        }),
+      ),
+    );
   });
-  const item = (slug: string) =>
-    db
-      .query(
-        `SELECT i.slug,i.display_name displayName,i.summary,i.description,i.homepage_url homepageUrl,i.repository_url repositoryUrl,i.icon_url iconUrl,i.tags_json tagsJson,p.slug publisherSlug,p.display_name publisherName,b.slug backendSlug,b.display_name backendName,r.version latestVersion FROM mcp_items i JOIN publishers p ON p.id=i.publisher_id JOIN backend_registries b ON b.id=i.backend_registry_id JOIN mcp_item_latest l ON l.item_id=i.id JOIN mcp_item_revisions r ON r.id=l.revision_id WHERE i.slug=? AND ${visible}`,
-      )
-      .get(slug) as any;
-  r.get("/items/:slug", (c) => {
-    const x = item(c.req.param("slug"));
-    assert(x, 404, "ITEM_NOT_FOUND");
-    return c.json({
-      slug: x.slug,
-      displayName: x.displayName,
-      summary: x.summary,
-      description: x.description,
-      backend: { slug: x.backendSlug, displayName: x.backendName },
-      publisher: { slug: x.publisherSlug, displayName: x.publisherName },
-      latestVersion: x.latestVersion,
-      homepageUrl: x.homepageUrl,
-      repositoryUrl: x.repositoryUrl,
-      iconUrl: x.iconUrl,
-      tags: JSON.parse(x.tagsJson),
-    });
+
+  // Search is the only dynamic page: arbitrary query strings cannot be
+  // pre-rendered, and it reads SQLite directly.
+  routes.get("/search", (c) => {
+    const raw = (c.req.query("q") ?? "").slice(0, MAX_SEARCH_QUERY_LENGTH);
+    const results = read(() =>
+      catalog.searchPublic({
+        q: raw,
+        limit: positiveQuery(c.req.query("limit")),
+        offset: positiveQuery(c.req.query("offset")),
+      }),
+    );
+    if (results === UNAVAILABLE) return unavailable(c);
+    return c.body(
+      renderSearch({
+        q: raw,
+        items: results.items,
+        limit: results.limit,
+        offset: results.offset,
+      }),
+      200,
+      { ...HTML, "Cache-Control": NO_STORE },
+    );
   });
-  r.get("/items/:slug/revisions", (c) => {
-    assert(item(c.req.param("slug")), 404, "ITEM_NOT_FOUND");
-    return c.json({
-      items: db
-        .query(
-          "SELECT r.version,r.published_at publishedAt FROM mcp_item_revisions r JOIN mcp_items i ON i.id=r.item_id WHERE i.slug=? AND i.status='active' AND r.status='published' ORDER BY r.published_at DESC",
-        )
-        .all(c.req.param("slug")),
-    });
-  });
-  const revision = (slug: string, version?: string) =>
-    db
-      .query(
-        `SELECT i.slug,b.slug backend_slug,r.*,CASE WHEN l.revision_id=r.id THEN 1 ELSE 0 END is_latest FROM mcp_items i JOIN backend_registries b ON b.id=i.backend_registry_id JOIN mcp_item_latest l ON l.item_id=i.id JOIN mcp_item_revisions r ON r.item_id=i.id WHERE i.slug=? AND i.status='active' AND r.status='published' AND r.id=${version ? "r.id" : "l.revision_id"} ${version ? "AND r.version=?" : ""}`,
-      )
-      .get(...(version ? [slug, version] : [slug])) as any;
-  r.get("/items/:slug/revisions/:version", (c) => {
-    const x = revision(c.req.param("slug"), c.req.param("version"));
-    assert(x, 404, "REVISION_NOT_FOUND");
-    return c.json({
-      item: x.slug,
-      version: x.version,
-      isLatest: !!x.is_latest,
-      backend: x.backend_slug,
-      backendLocator: JSON.parse(x.backend_locator_json),
-      serverDefinition: JSON.parse(x.server_definition_json),
-      envSchema: x.env_schema_json ? JSON.parse(x.env_schema_json) : null,
-      publishedAt: x.published_at,
-    });
-  });
-  r.get("/items/:slug/config", (c) => {
-    const x = revision(c.req.param("slug"));
-    assert(x, 404, "ITEM_NOT_FOUND");
-    return c.json(configProjection(x));
-  });
-  r.get("/items/:slug/revisions/:version/config", (c) => {
-    const x = revision(c.req.param("slug"), c.req.param("version"));
-    assert(x, 404, "REVISION_NOT_FOUND");
-    return c.json(configProjection(x));
-  });
-  return r;
-}
+
+  return routes;
+};
