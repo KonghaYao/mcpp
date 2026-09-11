@@ -11,6 +11,12 @@ export type AgentFixture = {
   description?: string;
 };
 
+export type SkillFixture = {
+  uri: string;
+  name: string;
+  description?: string;
+};
+
 export type ServerFixture = {
   id: string;
   transport: string;
@@ -39,6 +45,7 @@ export const mcppMetadata = (input: {
   displayName?: string;
   summary?: string;
   agents?: AgentFixture[];
+  skills?: SkillFixture[];
   servers?: ServerFixture[];
   extra?: Record<string, unknown>;
 }): Record<string, unknown> => ({
@@ -48,6 +55,7 @@ export const mcppMetadata = (input: {
     : { displayName: input.displayName }),
   ...(input.summary === undefined ? {} : { summary: input.summary }),
   ...(input.agents === undefined ? {} : { agents: input.agents }),
+  ...(input.skills === undefined ? {} : { skills: input.skills }),
   ...(input.servers === undefined ? {} : { servers: input.servers }),
   ...(input.extra ?? {}),
 });

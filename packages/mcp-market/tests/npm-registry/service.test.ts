@@ -296,6 +296,26 @@ describe("metadata validation", () => {
     expect(await codeOf(service.preview(ref()))).toBe("METADATA_INVALID");
   });
 
+  test("rejects an invalid package Skill URI", async () => {
+    registry.setHandler(() =>
+      json(
+        packumentFor({
+          name: NAME,
+          version: VERSION,
+          mcpp: mcppMetadata({
+            skills: [
+              {
+                uri: "https://example.com/SKILL.md",
+                name: "analyst",
+              },
+            ],
+          }),
+        }),
+      ),
+    );
+    expect(await codeOf(service.preview(ref()))).toBe("METADATA_INVALID");
+  });
+
   test("rejects an over-long description", async () => {
     registry.setHandler(() =>
       json(
@@ -376,6 +396,13 @@ describe("projection", () => {
                 description: "分析财务指标",
               },
             ],
+            skills: [
+              {
+                uri: "skill://financial-analysis/SKILL.md",
+                name: "financial-analysis",
+                description: "分析财务指标与估值假设",
+              },
+            ],
             servers: [
               {
                 id: "market-data",
@@ -405,6 +432,13 @@ describe("projection", () => {
           id: "financial-analyst",
           name: "财报解读顾问",
           description: "分析财务指标",
+        },
+      ],
+      skills: [
+        {
+          uri: "skill://financial-analysis/SKILL.md",
+          name: "financial-analysis",
+          description: "分析财务指标与估值假设",
         },
       ],
       servers: [

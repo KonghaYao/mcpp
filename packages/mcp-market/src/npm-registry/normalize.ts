@@ -3,6 +3,7 @@ import type {
   NormalizedPackageVersion,
   SnapshotAgent,
   SnapshotServer,
+  SnapshotSkill,
 } from "./types.ts";
 
 /**
@@ -23,6 +24,10 @@ export const LIMITS = {
   maxAgentIdLength: 64,
   maxAgentNameLength: 120,
   maxAgentDescriptionLength: 512,
+  maxSkills: 64,
+  maxSkillUriLength: 512,
+  maxSkillNameLength: 128,
+  maxSkillDescriptionLength: 512,
   maxServers: 32,
   maxServerIdLength: 64,
   maxTransportLength: 32,
@@ -171,6 +176,48 @@ const normalizeKeywords = (value: unknown): string[] => {
   return [...seen];
 };
 
+const normalizeSkills = (value: unknown): SnapshotSkill[] => {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value))
+    throw new AppError("METADATA_INVALID", "mcpp.skills must be an array");
+  if (value.length > LIMITS.maxSkills)
+    throw new AppError("METADATA_TOO_LARGE", "mcpp skills exceeds limit");
+  const seen = new Set<string>();
+  const skills: SnapshotSkill[] = [];
+  for (const entry of value) {
+    const record = asRecord(entry);
+    if (!record)
+      throw new AppError(
+        "METADATA_INVALID",
+        "mcpp.skills entry must be object",
+      );
+    const uri = requireString(
+      record.uri,
+      LIMITS.maxSkillUriLength,
+      "mcpp.skills[].uri",
+    );
+    if (!/^skill:\/\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]+\/SKILL\.md$/.test(uri))
+      throw new AppError("METADATA_INVALID", "Invalid mcpp skill URI");
+    if (seen.has(uri))
+      throw new AppError("METADATA_INVALID", "duplicate mcpp skill URI");
+    seen.add(uri);
+    skills.push({
+      uri,
+      name: requireString(
+        record.name,
+        LIMITS.maxSkillNameLength,
+        "mcpp.skills[].name",
+      ),
+      description: optionalString(
+        record.description,
+        LIMITS.maxSkillDescriptionLength,
+        "mcpp.skills[].description",
+      ),
+    });
+  }
+  return skills;
+};
+
 const normalizeAgents = (value: unknown): SnapshotAgent[] => {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value))
@@ -287,6 +334,7 @@ export function normalizePackageVersion(
   let displayName: string | null = null;
   let summary: string | null = null;
   let agents: SnapshotAgent[] = [];
+  let skills: SnapshotSkill[] = [];
   let servers: SnapshotServer[] = [];
   if (mcpp) {
     const schemaVersion = mcpp.schemaVersion;
@@ -307,6 +355,7 @@ export function normalizePackageVersion(
       "mcpp.summary",
     );
     agents = normalizeAgents(mcpp.agents);
+    skills = normalizeSkills(mcpp.skills);
     servers = normalizeServers(mcpp.servers);
   }
 
@@ -323,6 +372,7 @@ export function normalizePackageVersion(
     displayName,
     summary,
     agents,
+    skills,
     servers,
     integrity: dist
       ? optionalString(

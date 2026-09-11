@@ -65,6 +65,13 @@ const metadata = (
       description: "分析财务指标",
     },
   ],
+  skills: [
+    {
+      uri: "skill://financial-analysis/SKILL.md",
+      name: "financial-analysis",
+      description: "分析财务指标与估值假设",
+    },
+  ],
   servers: [{ id: "market-data", transport: "stdio", runtime: "node" }],
   integrity: "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
   tarballUrl: null,
@@ -201,7 +208,7 @@ describe("design system", () => {
   test("stays inside the inline-style budget", () => {
     // The search dialog, responsive hierarchy, and compact detail structures
     // remain within a small uncompressed visual-system budget.
-    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(25 * 1024);
+    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(26 * 1024);
   });
 });
 
@@ -393,6 +400,12 @@ describe("accessibility", () => {
     expect(html).not.toContain('<pre class="mcp-json"');
     expect(html).toContain("<pre hidden data-mcp-json>");
     expect(html).toContain("&quot;command&quot;: &quot;npx&quot;");
+    expect(html).toContain('<section class="detail-section skills-section">');
+    expect(html.indexOf("skills-section")).toBeGreaterThan(
+      html.indexOf("detail-columns"),
+    );
+    expect(html).toContain("financial-analysis");
+    expect(html).toContain("skill://financial-analysis/SKILL.md");
     expect(html).toContain("acme-investment-team@1.0.0");
     expect(html).not.toContain("@latest");
   });

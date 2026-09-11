@@ -500,6 +500,21 @@ ${searchPager(query, input.limit, input.offset, shown)}
   );
 };
 
+const skillList = (metadata: NormalizedPackageVersion): string =>
+  !metadata.skills || metadata.skills.length === 0
+    ? ""
+    : `<section class="detail-section skills-section">
+<div class="section-heading"><h2>Skills</h2><p class="lede">${metadata.skills.length} 个可发现技能</p></div>
+<ul class="skill-list">${metadata.skills
+        .map(
+          (skill) => `<li class="skill-item">
+<div><strong>${escapeHtml(skill.name)}</strong>${skill.description ? `<p>${escapeHtml(skill.description)}</p>` : ""}</div>
+<code>${escapeHtml(skill.uri)}</code>
+</li>`,
+        )
+        .join("")}</ul>
+</section>`;
+
 const agentList = (metadata: NormalizedPackageVersion): string =>
   metadata.agents.length === 0
     ? ""
@@ -648,6 +663,7 @@ ${trustPanel({
   homepageUrl: input.homepageUrl,
 })}
 </div>
+${skillList(metadata)}
 ${serverList({ packageName: detail.packageName, version: detail.latestVersion, metadata })}
 ${versionTable(detail.slug, detail.versions)}
 </div>`,
@@ -691,6 +707,7 @@ ${rig(input.metadata, "rig rig--lg")}
 ${deprecatedNotice(input.metadata)}
 ${trustPanel(input)}
 ${agentList(input.metadata)}
+${skillList(input.metadata)}
 ${serverList({ packageName: input.packageName, version: input.version, metadata: input.metadata })}
 </div>`,
     {

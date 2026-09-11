@@ -9,6 +9,12 @@ export type SnapshotAgent = {
   description: string | null;
 };
 
+export type SnapshotSkill = {
+  uri: string;
+  name: string;
+  description: string | null;
+};
+
 export type SnapshotServer = {
   id: string;
   transport: string;
@@ -23,6 +29,8 @@ export type NormalizedPackageVersion = {
   displayName: string | null;
   summary: string | null;
   agents: SnapshotAgent[];
+  /** Package-level Skills discovery metadata. Absent on legacy snapshots. */
+  skills?: SnapshotSkill[];
   servers: SnapshotServer[];
   integrity: string | null;
   /** Recorded for provenance only. Never requested and never rendered. */
