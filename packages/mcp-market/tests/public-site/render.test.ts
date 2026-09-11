@@ -199,9 +199,9 @@ describe("design system", () => {
   });
 
   test("stays inside the inline-style budget", () => {
-    // The search dialog and responsive hierarchy remain within a small
-    // uncompressed visual-system budget.
-    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(21 * 1024);
+    // The search dialog, responsive hierarchy, and compact detail structures
+    // remain within a small uncompressed visual-system budget.
+    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(25 * 1024);
   });
 });
 
@@ -373,6 +373,28 @@ describe("accessibility", () => {
         '<a href="/search" aria-current="page">搜索</a>',
       );
     }
+  });
+
+  test("places team members left of version information and provides exact MCP JSON", () => {
+    const html = renderPackage({ detail: detailOf(), homepageUrl: null });
+    expect(
+      html.indexOf('<section class="detail-section team-section">'),
+    ).toBeLessThan(
+      html.indexOf('<section class="detail-section source-section">'),
+    );
+    expect(html).toContain("<h2>MCP Server 声明</h2>");
+    expect(html).toContain(
+      '<th scope="col"><span class="sr-only">操作</span></th>',
+    );
+    expect(html).toContain(
+      '<td class="server-action"><button type="button" data-copy-mcp>复制 JSON</button>',
+    );
+    expect(html.match(/data-copy-mcp/g)?.length).toBe(1);
+    expect(html).not.toContain('<pre class="mcp-json"');
+    expect(html).toContain("<pre hidden data-mcp-json>");
+    expect(html).toContain("&quot;command&quot;: &quot;npx&quot;");
+    expect(html).toContain("acme-investment-team@1.0.0");
+    expect(html).not.toContain("@latest");
   });
 
   test("opens search from a button and renders an accessible dialog", () => {

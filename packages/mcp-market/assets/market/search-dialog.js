@@ -6,6 +6,28 @@
   const input = document.querySelector("#market-search-input");
   const status = document.querySelector("[data-search-status]");
   const results = document.querySelector("[data-search-results]");
+  const copyButtons = document.querySelectorAll("[data-copy-mcp]");
+
+  for (const copyButton of copyButtons) {
+    const control = copyButton.closest(".server-action");
+    const mcpJson = control?.querySelector("[data-mcp-json]");
+    const copyStatus = control?.querySelector("[data-copy-status]");
+    if (!mcpJson || !copyStatus) continue;
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(mcpJson.textContent);
+        copyButton.textContent = "已复制";
+        copyStatus.textContent = "已复制";
+        setTimeout(() => {
+          copyButton.textContent = "复制 JSON";
+          copyStatus.textContent = "";
+        }, 1800);
+      } catch {
+        copyStatus.textContent = "复制失败";
+      }
+    });
+  }
 
   if (
     !dialog ||

@@ -72,12 +72,15 @@ const toneOf = (slug: string): number => {
  * rendered as the plain text the Registry published, rather than being dressed
  * up as a date it may not be.
  */
-const timeElement = (value: string | null, fallback = "未知"): string =>
-  value === null
-    ? escapeHtml(fallback)
-    : /^\d{4}-\d{2}-\d{2}T/.test(value)
-      ? `<time datetime="${escapeHtml(value)}">${escapeHtml(value)}</time>`
-      : escapeHtml(value);
+const timeElement = (value: string | null, fallback = "未知"): string => {
+  if (value === null) return escapeHtml(fallback);
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(value)) return escapeHtml(value);
+  const date = new Date(value);
+  const readable = Number.isNaN(date.getTime())
+    ? value
+    : `${date.getUTCFullYear()}年${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
+  return `<time datetime="${escapeHtml(value)}">${escapeHtml(readable)}</time>`;
+};
 
 const navLink = (href: string, label: string, current: boolean): string =>
   `<a href="${href}"${current ? ` aria-current="page"` : ""}>${label}</a>`;
@@ -500,43 +503,62 @@ ${searchPager(query, input.limit, input.offset, shown)}
 const agentList = (metadata: NormalizedPackageVersion): string =>
   metadata.agents.length === 0
     ? ""
-    : `<h2>专家团队成员</h2>
-<p class="lede">以下角色由该 exact version 的快照声明。</p>
-<div class="grid">${metadata.agents
+    : `<section class="detail-section team-section">
+<div class="section-heading"><h2>专家团队成员</h2><p class="lede">该版本包含 ${metadata.agents.length} 位专家</p></div>
+<ul class="member-list">${metadata.agents
         .map(
-          (agent) => `<article class="card">
-<div class="card-head">
-<span class="tone tone-${toneOf(agent.id)}" aria-hidden="true">${escapeHtml(initialOf(agent.name))}</span>
-<div class="body">
-<h3>${escapeHtml(agent.name)}</h3>
-<span class="name">${escapeHtml(agent.id)}</span>
-</div>
-</div>
-${agent.description ? `<p class="summary">${escapeHtml(agent.description)}</p>` : ""}
-</article>`,
+          (agent) => `<li class="member-item">
+<span class="member-avatar tone-${toneOf(agent.id)}" aria-hidden="true">${escapeHtml(initialOf(agent.name))}</span>
+<div class="member-copy"><strong>${escapeHtml(agent.name)}</strong>${agent.description ? `<p>${escapeHtml(agent.description)}</p>` : ""}</div>
+<span class="member-id">${escapeHtml(agent.id)}</span>
+</li>`,
         )
-        .join("")}</div>`;
+        .join("")}</ul>
+</section>`;
 
 const tableRegion = (label: string, table: string): string =>
   `<div class="table-scroll" role="region" aria-label="${escapeHtml(label)}" tabindex="0">${table}</div>`;
 
-const serverList = (metadata: NormalizedPackageVersion): string =>
-  metadata.servers.length === 0
+const mcpJsonOf = (input: {
+  packageName: string;
+  version: string;
+  serverId: string;
+}): string =>
+  JSON.stringify(
+    {
+      mcpServers: {
+        [input.serverId]: {
+          command: "npx",
+          args: ["-y", `${input.packageName}@${input.version}`],
+        },
+      },
+    },
+    null,
+    2,
+  );
+
+const serverList = (input: {
+  packageName: string;
+  version: string;
+  metadata: NormalizedPackageVersion;
+}): string =>
+  input.metadata.servers.length === 0
     ? ""
-    : `<h2>MCP Server 声明</h2>
+    : `<section class="detail-section server-section">
+<h2>MCP Server 声明</h2>
 ${tableRegion(
   "MCP Server 声明",
   `<table>
 <caption class="sr-only">该版本声明的 MCP Server</caption>
-<thead><tr><th scope="col">ID</th><th scope="col">Transport</th><th scope="col">Runtime</th></tr></thead><tbody>
-${metadata.servers
+<thead><tr><th scope="col">ID</th><th scope="col">Transport</th><th scope="col">Runtime</th><th scope="col"><span class="sr-only">操作</span></th></tr></thead><tbody>
+${input.metadata.servers
   .map(
     (server) =>
-      `<tr><td class="mono">${escapeHtml(server.id)}</td><td>${escapeHtml(server.transport)}</td><td>${escapeHtml(server.runtime ?? "—")}</td></tr>`,
+      `<tr><td class="mono">${escapeHtml(server.id)}</td><td>${escapeHtml(server.transport)}</td><td>${escapeHtml(server.runtime ?? "—")}</td><td class="server-action"><button type="button" data-copy-mcp>复制 JSON</button><span class="copy-status" data-copy-status aria-live="polite"></span><pre hidden data-mcp-json>${escapeHtml(mcpJsonOf({ packageName: input.packageName, version: input.version, serverId: server.id }))}</pre></td></tr>`,
   )
   .join("")}
 </tbody></table>`,
-)}`;
+)}</section>`;
 
 const trustPanel = (input: {
   packageName: string;
@@ -547,18 +569,18 @@ const trustPanel = (input: {
   homepageUrl: string | null;
 }): string => {
   const href = safeHref(input.homepageUrl);
-  return `<h2>来源与版本</h2>
-<div class="panel">
-<dl class="kv">
-<dt>Package</dt><dd class="mono">${escapeHtml(input.packageName)}</dd>
-<dt>Registry</dt><dd>${escapeHtml(input.sourceId)}</dd>
-<dt>Exact version</dt><dd class="mono">${escapeHtml(input.version)}</dd>
-<dt>市场公开时间</dt><dd>${timeElement(input.publishedAt)}</dd>
-<dt>NPM 发布时间</dt><dd>${timeElement(input.metadata.publishedAt)}</dd>
-<dt>Integrity</dt><dd class="mono">${escapeHtml(input.metadata.integrity ?? "未提供")}</dd>
+  return `<section class="detail-section source-section"><div class="section-heading"><h2>来源与版本</h2><p class="lede">发布信息与制品标识</p></div>
+<div class="source-panel">
+<dl class="source-grid">
+<div><dt>Package</dt><dd class="mono">${escapeHtml(input.packageName)}</dd></div>
+<div><dt>Registry</dt><dd>${escapeHtml(input.sourceId)}</dd></div>
+<div><dt>版本</dt><dd class="mono">${escapeHtml(input.version)}</dd></div>
+<div><dt>市场公开</dt><dd>${timeElement(input.publishedAt)}</dd></div>
+<div><dt>NPM 发布</dt><dd>${timeElement(input.metadata.publishedAt)}</dd></div>
+<div class="source-integrity"><dt>Integrity</dt><dd class="mono">${escapeHtml(input.metadata.integrity ?? "未提供")}</dd></div>
 </dl>
-${href ? `<p class="disclaimer">在 NPM 查看：<a href="${escapeHtml(href)}" rel="noopener noreferrer nofollow" target="_blank">${escapeHtml(input.packageName)}</a></p>` : ""}<p class="disclaimer">市场只做目录收录，不代表已对代码、依赖或制品进行安全认证；版本状态与制品始终以 NPM 为准。</p>
-</div>`;
+${href ? `<p class="source-link">在 NPM 查看：<a href="${escapeHtml(href)}" rel="noopener noreferrer nofollow" target="_blank">${escapeHtml(input.packageName)}</a></p>` : ""}<p class="disclaimer">市场只做目录收录，不代表已对代码、依赖或制品进行安全认证；版本状态与制品始终以 NPM 为准。</p>
+</div></section>`;
 };
 
 const versionTable = (
@@ -567,7 +589,7 @@ const versionTable = (
 ): string =>
   versions.length <= 1
     ? ""
-    : `<h2>公开版本</h2>
+    : `<section class="detail-section"><h2>公开版本</h2>
 ${tableRegion(
   "公开版本",
   `<table>
@@ -583,7 +605,7 @@ ${versions
   )
   .join("")}
 </tbody></table>`,
-)}`;
+)}</section>`;
 
 const deprecatedNotice = (metadata: NormalizedPackageVersion): string =>
   metadata.deprecated === null
@@ -599,9 +621,9 @@ export const renderPackage = (input: {
   const name = displayNameOf(metadata);
   return layout(
     `${name} · ${BRAND}`,
-    `<div class="wrap">
-${crumbsOf([{ href: "/market", label: "能力目录" }, { label: name }])}
-<h1>${escapeHtml(name)}</h1>
+    `<div class="wrap detail-page">
+${crumbsOf([{ href: detail.isExpertTeam ? "/experts" : "/connectors", label: detail.isExpertTeam ? "专家" : "连接器" }, { label: name }])}
+<header class="detail-header"><h1>${escapeHtml(name)}</h1>
 <p class="lede">${escapeHtml(summaryOf(metadata))}</p>
 <div class="meta-row">
 ${
@@ -612,8 +634,11 @@ ${
 <span class="tag">latest v${escapeHtml(detail.latestVersion)}</span>
 ${metadata.keywords.map((k) => `<span class="tag">${escapeHtml(k)}</span>`).join("")}
 </div>
+</header>
 ${rig(metadata, "rig rig--lg")}
 ${deprecatedNotice(metadata)}
+<div class="detail-columns">
+${agentList(metadata)}
 ${trustPanel({
   packageName: detail.packageName,
   sourceId: detail.sourceId,
@@ -622,8 +647,8 @@ ${trustPanel({
   metadata,
   homepageUrl: input.homepageUrl,
 })}
-${agentList(metadata)}
-${serverList(metadata)}
+</div>
+${serverList({ packageName: detail.packageName, version: detail.latestVersion, metadata })}
 ${versionTable(detail.slug, detail.versions)}
 </div>`,
     { current: detail.isExpertTeam ? "experts" : "connectors" },
@@ -666,7 +691,7 @@ ${rig(input.metadata, "rig rig--lg")}
 ${deprecatedNotice(input.metadata)}
 ${trustPanel(input)}
 ${agentList(input.metadata)}
-${serverList(input.metadata)}
+${serverList({ packageName: input.packageName, version: input.version, metadata: input.metadata })}
 </div>`,
     {
       current: input.metadata.agents.length > 0 ? "experts" : "connectors",
