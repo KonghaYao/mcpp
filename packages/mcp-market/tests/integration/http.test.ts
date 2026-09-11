@@ -170,6 +170,25 @@ describe("health", () => {
 });
 
 describe("security headers", () => {
+  test("serves only allowlisted compressed market artwork", async () => {
+    const asset = await publicGet(
+      "/assets/market/img_investment_analysis_s03.webp",
+    );
+    expect(asset.status).toBe(200);
+    expect(asset.headers.get("content-type")).toBe("image/webp");
+    expect(asset.headers.get("cache-control")).toContain("immutable");
+    expect(Number(asset.headers.get("content-length") ?? 0)).toBeLessThan(
+      32 * 1024,
+    );
+
+    expect((await publicGet("/assets/market/../../package.json")).status).toBe(
+      404,
+    );
+    expect(
+      (await publicGet("/assets/market/not-allowlisted.webp")).status,
+    ).toBe(404);
+  });
+
   test("are applied to every response", async () => {
     for (const path of ["/", "/market", "/admin/login"]) {
       const response = await publicGet(path);
@@ -368,11 +387,28 @@ describe("public chrome", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<script>alert");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
   });
 
-  test("ships no script and no off-origin reference to any visitor page", async () => {
+  test("returns search results as an uncached JSON projection", async () => {
+    await serveVersion("1.0.0");
+    await publish("1.0.0");
+
+    const response = await publicGet("/api/search?q=investment");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const payload = (await response.json()) as {
+      items: Array<{ displayName: string; isExpertTeam: boolean }>;
+    };
+    expect(payload.items).toHaveLength(1);
+    expect(payload.items[0]).toMatchObject({
+      displayName: "投资研究专家团队",
+      isExpertTeam: true,
+    });
+  });
+
+  test("loads only the same-origin search dialog script", async () => {
     await serveVersion("1.0.0");
     await publish("1.0.0");
 
@@ -385,9 +421,13 @@ describe("public chrome", () => {
     ]) {
       const html = await (await publicGet(path)).text();
       expect(html, path).toContain('<a class="skip-link" href="#main">');
-      expect(html, path).toContain('<label class="sr-only" for="site-search">');
+      expect(html, path).toContain(
+        '<label class="sr-only" for="market-search-input">',
+      );
       expect(html.match(/<style>/g)?.length, path).toBe(1);
-      expect(html, path).not.toContain("<script");
+      expect(html, path).toContain(
+        '<script src="/assets/market/search-dialog.js" defer></script>',
+      );
       expect(html, path).not.toContain("<link");
       expect(html, path).not.toContain("https://");
       expect(html, path).not.toContain("http://");

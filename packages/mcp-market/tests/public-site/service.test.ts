@@ -82,7 +82,10 @@ const publishPackage = async (
               name: packageName,
               version,
               description: displayName,
-              mcpp: mcppMetadata({ displayName }),
+              mcpp: mcppMetadata({
+                displayName,
+                agents: [{ id: "expert", name: displayName }],
+              }),
             }),
           ),
           { status: 200, headers: { "content-type": "application/json" } },
@@ -462,13 +465,16 @@ describe("cached page chrome", () => {
       expect(page, path).toContain('<a class="skip-link" href="#main">');
       expect(page, path).toContain('<main id="main" tabindex="-1">');
       expect(page, path).toContain(
-        '<label class="sr-only" for="site-search">搜索能力</label>',
+        '<label class="sr-only" for="market-search-input">搜索能力</label>',
       );
       expect(page?.match(/<style>/g)?.length, path).toBe(1);
-      expect(page, path).not.toContain("<script");
+      expect(page, path).toContain(
+        '<script src="/assets/market/search-dialog.js" defer></script>',
+      );
       expect(page, path).not.toContain("<link");
-      expect(page, path).not.toContain("<img");
-      // No origin at all: every page is self-contained by construction.
+      for (const image of page?.matchAll(/<img[^>]+src="([^"]+)"/g) ?? [])
+        expect(image[1], path).toMatch(/^\/assets\/market\/[a-z0-9_]+\.webp$/);
+      // No external origin: artwork is served from the fixed same-origin path.
       expect(page, path).not.toContain("http://");
       expect(page, path).not.toContain("https://");
       // Styling is a fixed class vocabulary, never a data-carrying attribute.
@@ -487,7 +493,7 @@ describe("cached page chrome", () => {
       versionPath(SLUG, "1.0.0"),
     ])
       expect(await store.read(path), path).toContain(
-        '<a href="/market" aria-current="page">能力目录</a>',
+        '<a href="/experts" aria-current="page">专家</a>',
       );
   });
 
@@ -498,7 +504,7 @@ describe("cached page chrome", () => {
       packagePath(SLUG),
     );
     expect(page).toContain("<strong>1</strong> 位专家");
-    expect(page).not.toContain("个连接器");
+    expect(page).not.toContain("个 MCP Server");
   });
 
   test("offers no offset pager on the cached catalogue page", async () => {
@@ -508,7 +514,7 @@ describe("cached page chrome", () => {
     expect(page).not.toContain("offset=");
     expect(page).not.toContain("上一页");
     expect(page).not.toContain("下一页");
-    expect(page).toContain("共 1 个公开条目");
+    expect(page).toContain("专家 <span>1</span>");
   });
 
   test("regenerates the shared pages when another package is published", async () => {
@@ -524,54 +530,10 @@ describe("cached page chrome", () => {
     expect(after).toContain("报告编辑专家");
   });
 
-  test("turns this page's keywords into encoded search links", async () => {
-    const tooLong = "k".repeat(30);
-    const keywords = [
-      "investment",
-      "投研 & 数据",
-      "<script>x</script>",
-      tooLong,
-    ];
-    harness.setRegistryHandler(
-      () =>
-        new Response(
-          JSON.stringify(
-            packumentFor({
-              name: NAME,
-              version: "1.0.0",
-              description: "投资研究专家团队",
-              keywords,
-              mcpp: mcppMetadata({
-                displayName: "投资研究专家团队",
-                agents: [{ id: "financial-analyst", name: "财报解读顾问" }],
-              }),
-            }),
-          ),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-    );
-    const preview = await harness.application.admin.preview(NAME, "1.0.0");
-    await harness.application.admin.publish({
-      packageName: NAME,
-      exactVersion: "1.0.0",
-      previewDigest: preview.metadataDigest,
-      requestId: "req-test",
-    });
-
+  test("does not render a page keyword section", async () => {
+    await publish("1.0.0");
     const page = await harness.application.publicSite.store.read(MARKET_PATH);
-    expect(page).toContain("本页关键词");
-    expect(page).toContain('href="/search?q=investment"');
-    expect(page).toContain(
-      `href="/search?q=${encodeURIComponent("投研 & 数据")}"`,
-    );
-    // A keyword is data: it can never become markup, only an escaped link.
-    expect(page).toContain(
-      `href="/search?q=${encodeURIComponent("<script>x</script>")}"`,
-    );
-    expect(page).not.toContain("<script");
-    // And the entry point is bounded: an oversized keyword is not a chip.
-    expect(page).not.toContain(
-      `href="/search?q=${encodeURIComponent(tooLong)}"`,
-    );
+    expect(page).not.toContain("本页关键词");
+    expect(page).not.toContain('class="chips"');
   });
 });

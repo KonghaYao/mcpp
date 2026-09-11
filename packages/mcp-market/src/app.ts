@@ -41,13 +41,27 @@ export type Application = {
 };
 
 /**
- * Security headers are applied to every response. `default-src 'none'` is
- * accurate rather than aspirational: the rendered documents contain no scripts
- * and no external resources.
+ * Security headers are applied to every response. Scripts are restricted to the
+ * single same-origin search-dialog asset; external resources remain blocked.
  */
+const MARKET_ASSETS = new Set([
+  "img_campus_learning_s01.webp",
+  "img_content_creation_s02.webp",
+  "img_investment_analysis_s03.webp",
+  "img_legal_consulting_s04.webp",
+  "img_small_business_s05.webp",
+  "img_ecommerce_operations_s06.webp",
+  "img_data_analysis_s07.webp",
+  "img_professional_documents_s08.webp",
+  "img_product_design_s09.webp",
+  "img_engineering_development_s10.webp",
+  "img_mcpp_market_brand_icon.webp",
+  "img_marketplace_background.webp",
+]);
+
 const CSP =
   "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; " +
-  "form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+  "script-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
 export function createApplication(deps: AppDependencies): Application {
   const { db, config } = deps;
@@ -86,6 +100,34 @@ export function createApplication(deps: AppDependencies): Application {
   });
 
   app.onError((error, c) => fail(c, error));
+
+  app.get(
+    "/assets/market/search-dialog.js",
+    () =>
+      new Response(
+        Bun.file(new URL("../assets/market/search-dialog.js", import.meta.url)),
+        {
+          headers: {
+            "Content-Type": "text/javascript; charset=utf-8",
+            "Cache-Control": "public, max-age=3600",
+          },
+        },
+      ),
+  );
+
+  app.get("/assets/market/:name", (c) => {
+    const name = c.req.param("name");
+    if (!MARKET_ASSETS.has(name)) return c.notFound();
+    return new Response(
+      Bun.file(new URL(`../assets/market/${name}`, import.meta.url)),
+      {
+        headers: {
+          "Content-Type": "image/webp",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      },
+    );
+  });
 
   app.get("/health/live", (c) =>
     c.json({ status: "ok" }, 200, { "Cache-Control": "no-store" }),

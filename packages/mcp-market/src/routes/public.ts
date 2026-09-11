@@ -26,8 +26,9 @@ import {
   renderVersion,
 } from "../public-site/render.ts";
 import {
+  CONNECTORS_PATH,
+  EXPERTS_PATH,
   HOME_PATH,
-  MARKET_PATH,
   packagePath,
   versionPath,
   type PublicSiteService,
@@ -119,17 +120,21 @@ export const publicRoutes = (
    * the pre-renderer writes, so one URL cannot show two different sets depending
    * on whether the cache happened to hold the document.
    */
-  routes.get("/market", (c) =>
-    serve(c, MARKET_PATH, () => {
+  const category = (
+    c: Context<AppEnv>,
+    relPath: string,
+    section: "experts" | "connectors",
+  ): Promise<Response> =>
+    serve(c, relPath, () => {
       const results = read(() => catalog.listPublic({ limit: MAX_PAGE_SIZE }));
       return results === UNAVAILABLE
         ? unavailable(c)
-        : document(
-            c,
-            renderList({ items: results.items, total: results.total }),
-          );
-    }),
-  );
+        : document(c, renderList(results, section));
+    });
+
+  routes.get("/market", (c) => category(c, EXPERTS_PATH, "experts"));
+  routes.get("/experts", (c) => category(c, EXPERTS_PATH, "experts"));
+  routes.get("/connectors", (c) => category(c, CONNECTORS_PATH, "connectors"));
 
   routes.get("/market/:slug", async (c) => {
     const slug = c.req.param("slug");
@@ -172,8 +177,30 @@ export const publicRoutes = (
     );
   });
 
-  // Search is the only dynamic page: arbitrary query strings cannot be
-  // pre-rendered, and it reads SQLite directly.
+  routes.get("/api/search", (c) => {
+    const raw = (c.req.query("q") ?? "").slice(0, MAX_SEARCH_QUERY_LENGTH);
+    const results = read(() =>
+      catalog.searchPublic({ q: raw, limit: 12, offset: 0 }),
+    );
+    if (results === UNAVAILABLE)
+      return c.json({ error: "SEARCH_UNAVAILABLE" }, 503, {
+        "Cache-Control": NO_STORE,
+      });
+    return c.json(
+      {
+        items: results.items.map((item) => ({
+          slug: item.slug,
+          displayName: item.metadata.displayName,
+          summary: item.metadata.summary,
+          isExpertTeam: item.isExpertTeam,
+        })),
+      },
+      200,
+      { "Cache-Control": NO_STORE },
+    );
+  });
+
+  // Search remains available as a no-JavaScript fallback.
   routes.get("/search", (c) => {
     const raw = (c.req.query("q") ?? "").slice(0, MAX_SEARCH_QUERY_LENGTH);
     const results = read(() =>

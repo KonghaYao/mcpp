@@ -19,7 +19,9 @@ import {
 import { StaticStore } from "./store.ts";
 
 export const HOME_PATH = "index.html";
-export const MARKET_PATH = "market/index.html";
+export const EXPERTS_PATH = "experts/index.html";
+export const CONNECTORS_PATH = "connectors/index.html";
+export const MARKET_PATH = EXPERTS_PATH;
 export const NOT_FOUND_PATH = "404.html";
 
 export const packagePath = (slug: string): string =>
@@ -123,11 +125,10 @@ export class PublicSiteService {
     await this.#store.write(HOME_PATH, renderHome(featured));
     paths.push(HOME_PATH);
     const list = this.#catalog.listPublic({ limit: 1000, offset: 0 });
-    await this.#store.write(
-      MARKET_PATH,
-      renderList({ items: list.items, total: list.total }),
-    );
-    paths.push(MARKET_PATH);
+    await this.#store.write(EXPERTS_PATH, renderList(list, "experts"));
+    paths.push(EXPERTS_PATH);
+    await this.#store.write(CONNECTORS_PATH, renderList(list, "connectors"));
+    paths.push(CONNECTORS_PATH);
     await this.#store.write(NOT_FOUND_PATH, renderNotFound());
     paths.push(NOT_FOUND_PATH);
   }

@@ -50,6 +50,15 @@ const readPositiveInt = (
   return value;
 };
 
+const readPort = (env: NodeJS.ProcessEnv): number => {
+  const raw = env.PORT;
+  if (raw === undefined || raw === "") return 0;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 0 || value > 65535)
+    throw new Error("Invalid PORT");
+  return value;
+};
+
 const readBoolean = (
   env: NodeJS.ProcessEnv,
   name: string,
@@ -101,7 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       "MCPM_REGISTRY_MAX_BYTES",
       4 * 1024 * 1024,
     ),
-    port: readPositiveInt(env, "PORT", 3000),
+    port: readPort(env),
     host: env.HOST ?? "0.0.0.0",
     secureCookies: readBoolean(env, "MCPM_SECURE_COOKIES", true),
     trustProxy: readBoolean(env, "MCPM_TRUST_PROXY", false),

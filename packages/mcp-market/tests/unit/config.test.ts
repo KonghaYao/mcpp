@@ -129,7 +129,7 @@ describe("numeric and boolean guards", () => {
     const config = loadConfig(env());
     expect(config.registryTimeoutMs).toBe(8000);
     expect(config.registryMaxBytes).toBe(4 * 1024 * 1024);
-    expect(config.port).toBe(3000);
+    expect(config.port).toBe(0);
     expect(config.sourceId).toBe("npm");
   });
 
@@ -143,7 +143,16 @@ describe("numeric and boolean guards", () => {
     expect(() => loadConfig(env({ MCPM_REGISTRY_MAX_BYTES: "0" }))).toThrow(
       /Invalid MCPM_REGISTRY_MAX_BYTES/,
     );
-    expect(() => loadConfig(env({ PORT: "-1" }))).toThrow(/Invalid PORT/);
+  });
+
+  test("accepts zero to request an OS-assigned port", () => {
+    expect(loadConfig(env({ PORT: "0" })).port).toBe(0);
+  });
+
+  test("refuses invalid ports", () => {
+    for (const port of ["-1", "65536", "1.5", "soon"]) {
+      expect(() => loadConfig(env({ PORT: port }))).toThrow(/Invalid PORT/);
+    }
   });
 
   test("defaults to secure cookies and no proxy trust", () => {

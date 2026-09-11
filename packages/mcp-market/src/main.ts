@@ -25,10 +25,10 @@ try {
   process.exit(1);
 }
 
-Bun.serve({
+const server = Bun.serve({
   port: config.port,
   hostname: config.host,
   fetch: application.app.fetch,
 });
 
-console.info(`MCPM listening on ${config.host}:${config.port}`);
+console.info(`MCPM listening on ${config.host}:${server.port}`);
