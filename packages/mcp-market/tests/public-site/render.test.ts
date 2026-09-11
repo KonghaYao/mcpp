@@ -208,7 +208,7 @@ describe("design system", () => {
   test("stays inside the inline-style budget", () => {
     // The search dialog, responsive hierarchy, and compact detail structures
     // remain within a small uncompressed visual-system budget.
-    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(26 * 1024);
+    expect(Buffer.byteLength(PUBLIC_STYLES)).toBeLessThanOrEqual(28 * 1024);
   });
 });
 
@@ -517,6 +517,10 @@ describe("honesty", () => {
       "connectors",
     );
     expect(experts).toContain("按场景找专家");
+    expect(experts).toContain('class="scene-rail"');
+    expect(experts).toContain(
+      'class="scene-grid" tabindex="0" aria-label="专家场景，可横向滚动"',
+    );
     expect(experts.match(/class="scene-card"/g)?.length).toBe(10);
     expect(experts).toContain(
       'src="/assets/market/img_investment_analysis_s03.webp"',

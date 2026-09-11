@@ -249,7 +249,8 @@ const SCENES = [
   ["工程开发", "代码、测试与发布", "img_engineering_development_s10.webp"],
 ] as const;
 
-const sceneGrid = (): string => `<div class="scene-grid">
+const sceneGrid = (): string => `<div class="scene-rail">
+<div class="scene-grid" tabindex="0" aria-label="专家场景，可横向滚动">
 ${SCENES.map(
   ([
     name,
@@ -260,6 +261,7 @@ ${SCENES.map(
 <span><strong>${name}</strong><small>${description}</small></span>
 </a>`,
 ).join("")}
+</div>
 </div>`;
 
 const marketplaceIntro = (): string => `<section class="market-intro">
@@ -429,7 +431,7 @@ ${catalogueSection({
   description:
     section === "experts"
       ? "由一个 Connector package 交付的协作 Agent 团队，适合直接按工作目标选择。"
-      : "提供明确 MCP Server 能力的 package，用于连接文件、浏览器、记忆与其他系统。",
+      : "连接文件、浏览器、记忆与推理等外部能力。",
   items,
   emptyTitle:
     section === "experts"
