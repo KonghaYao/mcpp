@@ -15,6 +15,12 @@ FROM ${BUN_IMAGE} AS deps
 
 WORKDIR /app
 
+# Optional registry for dependency installs: an internal mirror, or a private
+# registry that also serves the public packages this image needs. Empty keeps
+# `bun install` on its default. Credentials do not belong here — an argument is
+# readable in `docker history` — they go in the secret below.
+ARG NPM_REGISTRY=""
+
 # Every workspace package.json has to be present: `--frozen-lockfile` compares
 # the lockfile against all `workspaces` entries and fails on a missing one
 # rather than skipping it. Only the server's dependency tree is installed, so
@@ -22,7 +28,15 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages ./packages
 COPY examples ./examples
-RUN bun install --frozen-lockfile --production --filter '@open-mcp-market/server'
+
+# The `.npmrc` arrives as a build secret and lives only for this instruction:
+# `--mount=type=secret` never commits to a layer, so a token written here cannot
+# be recovered from the published image. The file is an ordinary `.npmrc` —
+# `//host/:_authToken=...`, plus `@scope:registry=...` when the private registry
+# serves only part of the tree.
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
+    if [ -n "$NPM_REGISTRY" ]; then set -- "--registry=$NPM_REGISTRY"; fi; \
+    bun install --frozen-lockfile --production --filter '@open-mcp-market/server' "$@"
 
 # ---------------------------------------------------------------------------
 # Runtime

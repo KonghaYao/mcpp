@@ -88,6 +88,13 @@ jobs:
           load: true
           tags: mcpm-market:smoke
           cache-from: type=gha
+          # Optional private registry. Unset — which is the default — builds
+          # against the public one. `NPM_REGISTRY` is a repository variable and
+          # `NPMRC` a secret holding an `.npmrc` with the credentials.
+          build-args: |
+            NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
+          secrets: |
+            npmrc=${{ secrets.NPMRC }}
 
       - name: Smoke test
         run: |
@@ -134,3 +141,7 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: true
           sbom: true
+          build-args: |
+            NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
+          secrets: |
+            npmrc=${{ secrets.NPMRC }}

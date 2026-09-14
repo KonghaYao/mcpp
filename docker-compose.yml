@@ -1,7 +1,13 @@
 # Reference deployment for the market server.
 #
-# Single-instance by design: SQLite is the only store and the architecture
-# document calls for one writer. Do not scale this service past one replica.
+# Two services: the market itself and the npm registry it reads package metadata
+# from. Keeping that registry in this file, rather than reading straight from
+# npmjs.org, is what makes the deployment self-contained — package traffic stays
+# on this host and survives an upstream outage for anything already cached.
+#
+# The market is single-instance by design: SQLite is the only store and the
+# architecture document calls for one writer. Do not scale it past one replica;
+# the registry can be scaled, but shares one storage volume.
 #
 # `docker compose up -d` needs two files beside this one: `.env` for deployment
 # parameters and `market-secrets.env` for credentials (both have an `.example`
@@ -12,6 +18,43 @@
 name: mcpm-market
 
 services:
+  # The self-hosted npm registry. Verdaccio proxies the public registry on
+  # demand: the first request for a package fetches it upstream, every request
+  # after that is served from local storage.
+  registry:
+    image: verdaccio/verdaccio:6
+    restart: unless-stopped
+
+    volumes:
+      # Published packages, cached upstream tarballs, and the user database.
+      - registry-storage:/verdaccio/storage
+
+    ports:
+      # For `npm --registry http://127.0.0.1:4873 publish` and for debugging.
+      # The market does not use this: it reaches the registry over the compose
+      # network, so the port can stay closed to everything but the host.
+      - "${NPM_REGISTRY_BIND:-127.0.0.1}:${NPM_REGISTRY_PORT:-4873}:4873"
+
+    healthcheck:
+      # No wget or curl in this image; the runtime itself answers the probe.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4873/-/ping').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   market:
     # Pulled on the server, built locally when the registry image is absent.
     # This is the image CI publishes; the owner segment is lowercased because
@@ -20,6 +63,12 @@ services:
     build:
       context: .
       dockerfile: packages/mcp-market/Dockerfile
+      args:
+        # Empty builds against the default registry; set `NPM_REGISTRY` to build
+        # through an internal mirror or a private registry.
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+      secrets:
+        - npmrc
     restart: unless-stopped
 
     env_file:
@@ -32,14 +81,22 @@ services:
       # the server rejects at startup. `raw` passes this file through untouched.
       - path: market-secrets.env
         format: raw
-    # Container wiring only: every operator-facing value (username, registry,
-    # cookie flags, proxy trust, credentials) comes from an env file, so each is
-    # set in exactly one place.
+    # Container wiring only: every operator-facing value (username, cookie
+    # flags, proxy trust, credentials) comes from an env file, so each is set in
+    # exactly one place.
     environment:
       HOST: 0.0.0.0
       PORT: "3000"
       MCPM_DB_PATH: /data/mcpm.sqlite
       MCPM_STATIC_DIR: /data/public-static
+      # Defaults to the registry in this file. Set `MCPM_REGISTRY_URL` in `.env`
+      # to read metadata elsewhere — `https://registry.npmjs.org` for the public
+      # one — without touching this file.
+      MCPM_REGISTRY_URL: ${MCPM_REGISTRY_URL:-http://registry:4873}
+
+    depends_on:
+      registry:
+        condition: service_healthy
 
     ports:
       - "${MCPM_BIND_ADDRESS:-0.0.0.0}:${MCPM_PORT:-3000}:3000"
@@ -60,3 +117,12 @@ services:
 
 volumes:
   market-data:
+  registry-storage:
+
+secrets:
+  # A plain `.npmrc` holding whatever the private registry needs. `/dev/null` is
+  # the default so a deployment without one has nothing to create; point
+  # `NPMRC_FILE` at a real file — your `~/.npmrc` works — to use credentials.
+  # The build reads it once and it is not stored in the image.
+  npmrc:
+    file: ${NPMRC_FILE:-/dev/null}
