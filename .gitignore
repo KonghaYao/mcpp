@@ -9,6 +9,7 @@ packages/mcp-market/public-static/
 .env
 .env.*
 !.env.example
+market-secrets.env
 .DS_Store
 *.log
 coverage/

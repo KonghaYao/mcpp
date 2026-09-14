@@ -1,0 +1,62 @@
+# Reference deployment for the market server.
+#
+# Single-instance by design: SQLite is the only store and the architecture
+# document calls for one writer. Do not scale this service past one replica.
+#
+# `docker compose up -d` needs two files beside this one: `.env` for deployment
+# parameters and `market-secrets.env` for credentials (both have an `.example`
+# to copy from). The app is exposed directly on the host port; nothing here
+# terminates TLS, so `MCPM_SECURE_COOKIES` must stay `false` until a reverse
+# proxy is put in front.
+
+name: mcpm-market
+
+services:
+  market:
+    # Pulled on the server, built locally when the registry image is absent.
+    # CI publishes to `ghcr.io/<owner>/<repo>`, which is what `MCPM_IMAGE`
+    # should point at.
+    image: ${MCPM_IMAGE:-ghcr.io/OWNER/open-mcp-market:latest}
+    build:
+      context: .
+      dockerfile: packages/mcp-market/Dockerfile
+    restart: unless-stopped
+
+    env_file:
+      # Deployment parameters: image, port, bind address, registry URL.
+      - .env
+      # Credentials live in their own file because every value in `.env` is
+      # also used for `${...}` interpolation, and an argon2/bcrypt hash is made
+      # of `$` signs — compose would read those as variable references, warn
+      # about each one on every command, and rewrite the hash into something
+      # the server rejects at startup. `raw` passes this file through untouched.
+      - path: market-secrets.env
+        format: raw
+    # Container wiring only: every operator-facing value (username, registry,
+    # cookie flags, proxy trust, credentials) comes from an env file, so each is
+    # set in exactly one place.
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      MCPM_DB_PATH: /data/mcpm.sqlite
+      MCPM_STATIC_DIR: /data/public-static
+
+    ports:
+      - "${MCPM_BIND_ADDRESS:-0.0.0.0}:${MCPM_PORT:-3000}:3000"
+
+    volumes:
+      # One volume for both the database and the pre-rendered pages: the page
+      # store renames a temporary file onto its target, which is only atomic
+      # within a single filesystem.
+      - market-data:/data
+
+    stop_grace_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  market-data:

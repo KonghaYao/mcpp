@@ -1,0 +1,26 @@
+.git
+.github
+.husky
+.claude
+.peri
+handoffs
+docs
+
+node_modules
+**/node_modules
+dist
+**/dist
+**/dist-worker
+*.tsbuildinfo
+coverage
+*.log
+
+# Runtime state, never baked into an image: the database, the admin password
+# file, and the pre-rendered page cache are all produced by a running server.
+**/data
+**/public-static
+
+# Environment files carry credentials; they are injected at run time, so they
+# must not reach a layer even though they sit in the build context.
+*.env
+*.env.*
