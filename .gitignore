@@ -1,5 +1,11 @@
 node_modules/
 dist/
+# The echo-mcp fixture's `dist/` is hand-written source, not build output:
+# `worker-host.ts` imports it and `mcpp.servers.default.entry` points at it. The
+# `dist/` rule above hides it from every fresh clone, which is exactly how three
+# worker tests passed locally and failed in CI.
+!examples/mcp-registry/fixtures/echo-mcp/dist/
+!examples/mcp-registry/fixtures/echo-mcp/dist/*.js
 examples/plugins/monorepo/dist-worker/
 examples/mcp-registry/data/
 packages/mcp-market/data/*
