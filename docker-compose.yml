@@ -14,9 +14,9 @@ name: mcpm-market
 services:
   market:
     # Pulled on the server, built locally when the registry image is absent.
-    # CI publishes to `ghcr.io/<owner>/<repo>`, which is what `MCPM_IMAGE`
-    # should point at.
-    image: ${MCPM_IMAGE:-ghcr.io/OWNER/open-mcp-market:latest}
+    # This is the image CI publishes; the owner segment is lowercased because
+    # registry paths are lowercase-only.
+    image: ${MCPM_IMAGE:-ghcr.io/konghayao/mcpp:latest}
     build:
       context: .
       dockerfile: packages/mcp-market/Dockerfile

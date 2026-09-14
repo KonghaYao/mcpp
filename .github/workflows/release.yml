@@ -45,6 +45,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Registry paths are lowercase-only and `github.repository` keeps the
+      # owner's casing (`KonghaYao/mcpp`), so the name is normalised here rather
+      # than left to the metadata action.
+      - name: Resolve image repository
+        run: echo "IMAGE_REPO=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
@@ -60,7 +66,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
