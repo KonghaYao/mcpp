@@ -51,6 +51,16 @@ jobs:
       - name: Resolve image repository
         run: echo "IMAGE_REPO=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
+      # The build reads this as a secret file rather than a secret value: buildx
+      # rejects an empty value (`npmrc=` is not a valid secret), and the registry
+      # is optional, so the file always exists and is empty when NPMRC is unset.
+      - name: Stage the private registry's .npmrc
+        env:
+          NPMRC: ${{ secrets.NPMRC }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/npmrc"
+          printf '%s' "$NPMRC" > "$RUNNER_TEMP/npmrc"
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
@@ -89,12 +99,12 @@ jobs:
           tags: mcpm-market:smoke
           cache-from: type=gha
           # Optional private registry. Unset — which is the default — builds
-          # against the public one. `NPM_REGISTRY` is a repository variable and
-          # `NPMRC` a secret holding an `.npmrc` with the credentials.
+          # against the public one. `NPM_REGISTRY` is a repository variable, the
+          # credentials an `NPMRC` secret holding an `.npmrc`.
           build-args: |
             NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
-          secrets: |
-            npmrc=${{ secrets.NPMRC }}
+          secret-files: |
+            npmrc=${{ runner.temp }}/npmrc
 
       - name: Smoke test
         run: |
@@ -143,5 +153,5 @@ jobs:
           sbom: true
           build-args: |
             NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
-          secrets: |
-            npmrc=${{ secrets.NPMRC }}
+          secret-files: |
+            npmrc=${{ runner.temp }}/npmrc
