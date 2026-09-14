@@ -93,7 +93,13 @@ export function createApplication(deps: AppDependencies): Application {
     c.set("requestId", requestId);
     c.header("x-request-id", requestId);
     c.header("X-Content-Type-Options", "nosniff");
-    c.header("Referrer-Policy", "no-referrer");
+    // `same-origin`, not `no-referrer`: Chrome sets `Origin: null` on form
+    // navigations from a document whose referrer policy is `no-referrer`, which
+    // `AdminAuthService.assertSameOrigin` then rejects. That would break every
+    // admin form (login, publish, unpublish, refresh) in a real browser while
+    // tests, which set the header by hand, keep passing. `same-origin` still
+    // sends no referrer off-origin, and outbound links carry `rel=noreferrer`.
+    c.header("Referrer-Policy", "same-origin");
     c.header("X-Frame-Options", "DENY");
     c.header("Content-Security-Policy", CSP);
     await next();

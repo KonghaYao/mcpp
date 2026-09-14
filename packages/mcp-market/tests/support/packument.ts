@@ -75,7 +75,13 @@ export const packumentFor = (
     ...(input.mcpp === undefined ? {} : { mcpp: input.mcpp }),
     dist: {
       ...(input.integrity === undefined
-        ? { integrity: "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }
+        ? {
+            // A real sha512 SRI (88 base64 chars). Keep it realistic: a short
+            // placeholder here once hid a validator that rejected every
+            // published package.
+            integrity:
+              "sha512-ySkKdW+6nSh2cvK986z0Cg2Od7YC8mjLglK35WPGgzFQ2ovXScbjMuF42SfzLNTl+4wcvScsBdT8md82I+aOSA==",
+          }
         : { integrity: input.integrity }),
       tarball:
         input.tarball ??

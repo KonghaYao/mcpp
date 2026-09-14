@@ -47,7 +47,11 @@ export const snapshot = (input: SnapshotInput): NormalizedPackageVersion => ({
   summary: input.summary ?? null,
   agents: input.agents ?? [],
   servers: input.servers ?? [],
-  integrity: "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  // Matches the default in `packumentFor`; keep both realistic (see the note
+  // there) so a normalised snapshot stays byte-identical to what a real
+  // Packument produces.
+  integrity:
+    "sha512-ySkKdW+6nSh2cvK986z0Cg2Od7YC8mjLglK35WPGgzFQ2ovXScbjMuF42SfzLNTl+4wcvScsBdT8md82I+aOSA==",
   tarballUrl: `https://registry.example.com/${input.name}/-/${input.name}-${input.version}.tgz`,
   unpackedSizeBytes: null,
   fileCount: null,

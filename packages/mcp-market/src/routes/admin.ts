@@ -132,7 +132,18 @@ export const adminRoutes = (
     try {
       auth.assertSameOrigin(c.req.header("origin"), c.req.header("host"));
       auth.assertFormContentType(c.req.header("content-type"));
-    } catch {
+    } catch (error) {
+      // The four rejection reasons collapse into one message on purpose. That
+      // makes an operator-visible diagnosis impossible, so the received values
+      // are logged instead of rendered: they are caller-controlled and this
+      // response is HTML.
+      console.warn(
+        `[admin-login] rejected requestId=${c.get("requestId")}` +
+          ` origin=${JSON.stringify(c.req.header("origin") ?? null)}` +
+          ` host=${JSON.stringify(c.req.header("host") ?? null)}` +
+          ` content-type=${JSON.stringify(c.req.header("content-type") ?? null)}` +
+          ` reason=${error instanceof Error ? error.message : "unknown"}`,
+      );
       return respond(401, "请求未通过同源校验。");
     }
 

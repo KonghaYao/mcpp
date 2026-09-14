@@ -194,7 +194,9 @@ describe("security headers", () => {
       const response = await publicGet(path);
       expect(response.headers.get("x-content-type-options")).toBe("nosniff");
       expect(response.headers.get("x-frame-options")).toBe("DENY");
-      expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+      // Must not be `no-referrer`: Chrome then sends `Origin: null` on form
+      // submissions and every admin form fails its same-origin check.
+      expect(response.headers.get("referrer-policy")).toBe("same-origin");
       expect(response.headers.get("content-security-policy")).toContain(
         "default-src 'none'",
       );

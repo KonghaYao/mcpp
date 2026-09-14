@@ -152,6 +152,31 @@ const optionalUrl = (value: unknown, field: string): string | null => {
   return parsed.toString();
 };
 
+/**
+ * Subresource Integrity, one or more whitespace-separated `<algo>-<base64>`
+ * digests: `sha512-<88 base64 chars>` for every real npm package.
+ *
+ * An SRI digest is base64 by construction, so `looksLikeSecret` — whose
+ * inline-binary heuristic is a run of 64 or more base64 characters — rejects
+ * every published package. Integrity is therefore shape-checked instead, which
+ * still keeps the field from becoming an unexamined carrier for arbitrary text.
+ */
+const INTEGRITY_PATTERN =
+  /^[a-z0-9]+-[A-Za-z0-9+/]+={0,2}(?:\?[A-Za-z0-9-]+)?(?:\s+[a-z0-9]+-[A-Za-z0-9+/]+={0,2}(?:\?[A-Za-z0-9-]+)?)*$/;
+
+const optionalIntegrity = (value: unknown, field: string): string | null => {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string")
+    throw new AppError("METADATA_INVALID", `Invalid ${field}`);
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > LIMITS.maxIntegrityLength)
+    throw new AppError("METADATA_TOO_LARGE", `${field} exceeds limit`);
+  if (!INTEGRITY_PATTERN.test(trimmed))
+    throw new AppError("METADATA_INVALID", `Invalid ${field}`);
+  return trimmed;
+};
+
 const optionalNonNegativeInt = (value: unknown): number | null =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= 0
     ? value
@@ -375,11 +400,7 @@ export function normalizePackageVersion(
     skills,
     servers,
     integrity: dist
-      ? optionalString(
-          dist.integrity,
-          LIMITS.maxIntegrityLength,
-          "dist.integrity",
-        )
+      ? optionalIntegrity(dist.integrity, "dist.integrity")
       : null,
     tarballUrl: dist ? optionalUrl(dist.tarball, "dist.tarball") : null,
     unpackedSizeBytes: dist ? optionalNonNegativeInt(dist.unpackedSize) : null,

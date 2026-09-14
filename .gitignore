@@ -2,6 +2,9 @@ node_modules/
 dist/
 examples/plugins/monorepo/dist-worker/
 examples/mcp-registry/data/
+packages/mcp-market/data/*
+!packages/mcp-market/data/.gitkeep
+packages/mcp-market/public-static/
 *.tsbuildinfo
 .env
 .env.*

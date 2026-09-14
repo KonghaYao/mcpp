@@ -355,6 +355,29 @@ describe("metadata validation", () => {
     expect(await codeOf(service.preview(ref()))).toBe("METADATA_INVALID");
   });
 
+  test("keeps a real Subresource Integrity digest", async () => {
+    const integrity =
+      "sha512-ySkKdW+6nSh2cvK986z0Cg2Od7YC8mjLglK35WPGgzFQ2ovXScbjMuF42SfzLNTl+4wcvScsBdT8md82I+aOSA==";
+    registry.setHandler(() =>
+      json(packumentFor({ name: NAME, version: VERSION, integrity })),
+    );
+    const { metadata } = await service.preview(ref());
+    expect(metadata.integrity).toBe(integrity);
+  });
+
+  test("rejects an integrity value that is not a digest", async () => {
+    registry.setHandler(() =>
+      json(
+        packumentFor({
+          name: NAME,
+          version: VERSION,
+          integrity: "Authorization: Bearer sk-live-9f2b7c1d4e6a8b0c2d4e",
+        }),
+      ),
+    );
+    expect(await codeOf(service.preview(ref()))).toBe("METADATA_INVALID");
+  });
+
   test("rejects metadata carrying inline base64 payloads", async () => {
     registry.setHandler(() =>
       json(
@@ -444,7 +467,8 @@ describe("projection", () => {
       servers: [
         { id: "market-data", transport: "stdio", runtime: "client-local" },
       ],
-      integrity: "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      integrity:
+        "sha512-ySkKdW+6nSh2cvK986z0Cg2Od7YC8mjLglK35WPGgzFQ2ovXScbjMuF42SfzLNTl+4wcvScsBdT8md82I+aOSA==",
       tarballUrl: `https://registry.example.com/${NAME}/-/${NAME}-${VERSION}.tgz`,
       unpackedSizeBytes: 4096,
       fileCount: 12,
