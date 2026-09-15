@@ -14,6 +14,7 @@ export type Config = {
   readonly host: string;
   readonly secureCookies: boolean;
   readonly trustProxy: boolean;
+  readonly httpAllowLoopback?: boolean;
 };
 
 export const SESSION_SECRET_MIN_LENGTH = 32;
@@ -103,7 +104,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       env.MCPM_REGISTRY_HOMEPAGE_URL === ""
         ? null
         : readBaseUrl(env, "MCPM_REGISTRY_HOMEPAGE_URL"),
-    sourceId: env.MCPM_SOURCE_ID ?? "npm",
+    httpAllowLoopback: readBoolean(env, "MCPM_HTTP_ALLOW_LOOPBACK", false),
+    sourceId: (() => {
+      const sourceId = env.MCPM_SOURCE_ID ?? "npm";
+      if (sourceId.startsWith("http:"))
+        throw new Error("MCPM_SOURCE_ID uses a reserved prefix");
+      return sourceId;
+    })(),
     registryTimeoutMs: readPositiveInt(env, "MCPM_REGISTRY_TIMEOUT_MS", 8000),
     registryMaxBytes: readPositiveInt(
       env,

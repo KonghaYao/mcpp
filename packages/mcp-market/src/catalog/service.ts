@@ -6,7 +6,7 @@ import {
   CatalogRepository,
   type PackageWithPublication,
 } from "./repository.ts";
-import { fromPackageSlug, toPackageSlug } from "./slug.ts";
+import { fromHttpSlug, fromPackageSlug, toPackageSlug } from "./slug.ts";
 import type {
   Publication,
   PublicationChange,
@@ -18,6 +18,7 @@ export const DEFAULT_PAGE_SIZE = 24;
 export const MAX_PAGE_SIZE = 60;
 
 export type PackageSummary = {
+  sourceKind: "npm" | "http";
   slug: string;
   sourceId: string;
   packageName: string;
@@ -132,8 +133,9 @@ const toSummary = (row: PackageWithPublication): PackageSummary | null => {
   const metadata = parseMetadata(row.publication.metadataJson);
   if (!metadata) return null;
   return {
-    slug: toPackageSlug(row.package.packageName),
+    slug: toPackageSlug(row.package.packageName, row.package.sourceId),
     sourceId: row.package.sourceId,
+    sourceKind: row.package.sourceKind,
     packageName: row.package.packageName,
     metadata,
     isExpertTeam: metadata.agents.length > 0,
@@ -165,12 +167,32 @@ export class CatalogService {
    * validated the snapshot; this method re-reads current state inside the write
    * transaction so concurrent calls cannot create duplicates.
    */
+  syncHttp(
+    input: PublishInput & { definitionRevision: number },
+  ): PublicationChange {
+    return this.#publish(input, input.definitionRevision);
+  }
+
   publish(input: PublishInput): PublicationChange {
+    return this.#publish(input, false);
+  }
+
+  #publish(input: PublishInput, syncHttp: number | false): PublicationChange {
     const metadata = parseMetadata(input.metadataJson);
     if (!metadata)
       throw new AppError("METADATA_INVALID", "Snapshot is not valid JSON");
 
     return immediate(this.#db, () => {
+      if (syncHttp !== false) {
+        const definition = this.#db
+          .query<
+            { definition_revision: number },
+            [string, string]
+          >("SELECT definition_revision FROM market_packages WHERE source_id=? AND package_name=? AND source_kind='http'")
+          .get(input.sourceId, input.packageName);
+        if (!definition || definition.definition_revision !== syncHttp)
+          throw new AppError("PREVIEW_CHANGED");
+      }
       let marketPackage = this.#repo.findPackage(
         input.sourceId,
         input.packageName,
@@ -201,14 +223,23 @@ export class CatalogService {
         marketPackage.id,
         input.exactVersion,
       );
-      if (existing && existing.unpublishedAt === null) {
+      if (syncHttp && marketPackage.sourceKind !== "http")
+        throw new AppError("INVALID_INPUT");
+      if (
+        existing &&
+        existing.unpublishedAt === null &&
+        (!syncHttp || existing.id === previousLatest)
+      ) {
         // Strictly idempotent: no snapshot refresh, no timestamp change, no
         // latest movement, no operation record.
         return {
           action: "noop",
           packageId: marketPackage.id,
           packageName: marketPackage.packageName,
-          packageSlug: toPackageSlug(marketPackage.packageName),
+          packageSlug: toPackageSlug(
+            marketPackage.packageName,
+            marketPackage.sourceId,
+          ),
           publicationId: existing.id,
           exactVersion: existing.exactVersion,
           previousLatestPublicationId: previousLatest,
@@ -221,7 +252,9 @@ export class CatalogService {
         // Restore: the first snapshot stays authoritative and immutable.
         this.#repo.restorePublication(existing.id, timestamp, timestamp);
         this.#repo.setLatest(marketPackage.id, existing.id, timestamp);
-        this.#repo.reindexSearch(marketPackage.id, metadata);
+        const storedMetadata = parseMetadata(existing.metadataJson);
+        if (!storedMetadata) throw new AppError("METADATA_INVALID");
+        this.#repo.reindexSearch(marketPackage.id, storedMetadata);
         this.#repo.insertOperation({
           id: newId(),
           action: "restore",
@@ -234,7 +267,10 @@ export class CatalogService {
           action: "restore",
           packageId: marketPackage.id,
           packageName: marketPackage.packageName,
-          packageSlug: toPackageSlug(marketPackage.packageName),
+          packageSlug: toPackageSlug(
+            marketPackage.packageName,
+            marketPackage.sourceId,
+          ),
           publicationId: existing.id,
           exactVersion: existing.exactVersion,
           previousLatestPublicationId: previousLatest,
@@ -266,7 +302,10 @@ export class CatalogService {
         action: "publish",
         packageId: marketPackage.id,
         packageName: marketPackage.packageName,
-        packageSlug: toPackageSlug(marketPackage.packageName),
+        packageSlug: toPackageSlug(
+          marketPackage.packageName,
+          marketPackage.sourceId,
+        ),
         publicationId,
         exactVersion: input.exactVersion,
         previousLatestPublicationId: previousLatest,
@@ -296,7 +335,10 @@ export class CatalogService {
           action: "noop",
           packageId: marketPackage.id,
           packageName: marketPackage.packageName,
-          packageSlug: toPackageSlug(marketPackage.packageName),
+          packageSlug: toPackageSlug(
+            marketPackage.packageName,
+            marketPackage.sourceId,
+          ),
           publicationId: publication.id,
           exactVersion: publication.exactVersion,
           previousLatestPublicationId: previousLatest,
@@ -342,7 +384,10 @@ export class CatalogService {
         action: "unpublish",
         packageId: marketPackage.id,
         packageName: marketPackage.packageName,
-        packageSlug: toPackageSlug(marketPackage.packageName),
+        packageSlug: toPackageSlug(
+          marketPackage.packageName,
+          marketPackage.sourceId,
+        ),
         publicationId: publication.id,
         exactVersion: publication.exactVersion,
         previousLatestPublicationId: previousLatest,
@@ -423,8 +468,12 @@ export class CatalogService {
     const metadata = parseMetadata(publication.metadataJson);
     if (!metadata) return null;
     return {
-      slug: toPackageSlug(resolved.package.packageName),
+      slug: toPackageSlug(
+        resolved.package.packageName,
+        resolved.package.sourceId,
+      ),
       sourceId: resolved.package.sourceId,
+      sourceKind: resolved.package.sourceKind,
       packageName: resolved.package.packageName,
       metadata,
       isExpertTeam: metadata.agents.length > 0,
@@ -445,7 +494,8 @@ export class CatalogService {
    * restored. Display fields therefore fall back to the newest stored snapshot.
    */
   getAdminPackage(slug: string): AdminPackageDetail | null {
-    const packageName = fromPackageSlug(slug);
+    const http = fromHttpSlug(slug);
+    const packageName = http?.packageName ?? fromPackageSlug(slug);
     if (packageName === null) return null;
     const row = this.#db
       .query<
@@ -455,11 +505,11 @@ export class CatalogService {
           package_name: string;
           latest_publication_id: string | null;
         },
-        [string]
+        [string, string | null, string | null]
       >(
-        "SELECT id, source_id, package_name, latest_publication_id FROM market_packages WHERE package_name=? LIMIT 1",
+        "SELECT id, source_id, package_name, latest_publication_id FROM market_packages WHERE package_name=? AND ((? IS NULL AND source_kind='npm') OR source_id=?) LIMIT 1",
       )
-      .get(packageName);
+      .get(packageName, http?.sourceId ?? null, http?.sourceId ?? null);
     if (!row) return null;
 
     const versions = this.#db
@@ -492,7 +542,7 @@ export class CatalogService {
 
     return {
       packageId: row.id,
-      slug: toPackageSlug(row.package_name),
+      slug: toPackageSlug(row.package_name, row.source_id),
       sourceId: row.source_id,
       packageName: row.package_name,
       displayName: metadata?.displayName ?? null,
@@ -524,7 +574,7 @@ export class CatalogService {
         .get(record.id);
       return {
         packageId: record.id,
-        slug: toPackageSlug(record.packageName),
+        slug: toPackageSlug(record.packageName, record.sourceId),
         packageName: record.packageName,
         sourceId: record.sourceId,
         latestVersion: latest?.exactVersion ?? null,
@@ -550,7 +600,7 @@ export class CatalogService {
     publication: Publication | null;
   } {
     const marketPackage = this.#repo.findPackage(sourceId, packageName);
-    const packageSlug = toPackageSlug(packageName);
+    const packageSlug = toPackageSlug(packageName, sourceId);
     if (!marketPackage)
       return { state: "missing", packageSlug, publication: null };
     const publication = this.#repo.findPublication(
@@ -568,7 +618,8 @@ export class CatalogService {
 
   /** Resolves a slug to a package that currently has a visible latest. */
   #resolve(slug: string): PackageWithPublication | null {
-    const packageName = fromPackageSlug(slug);
+    const http = fromHttpSlug(slug);
+    const packageName = http?.packageName ?? fromPackageSlug(slug);
     if (packageName === null) return null;
     const row = this.#db
       .query<
@@ -576,15 +627,16 @@ export class CatalogService {
           pkg_id: string;
           source_id: string;
           package_name: string;
+          source_kind: "npm" | "http";
           latest_publication_id: string | null;
           pkg_created_at: string;
           pkg_updated_at: string;
         },
-        [string]
+        [string, string | null, string | null]
       >(
-        "SELECT id AS pkg_id, source_id, package_name, latest_publication_id, created_at AS pkg_created_at, updated_at AS pkg_updated_at FROM market_packages WHERE package_name=? LIMIT 1",
+        "SELECT id AS pkg_id, source_id, package_name, source_kind, latest_publication_id, created_at AS pkg_created_at, updated_at AS pkg_updated_at FROM market_packages WHERE package_name=? AND ((? IS NULL AND source_kind='npm') OR source_id=?) LIMIT 1",
       )
-      .get(packageName);
+      .get(packageName, http?.sourceId ?? null, http?.sourceId ?? null);
     if (!row || row.latest_publication_id === null) return null;
     const publication = this.#repo.findPublicationById(
       row.latest_publication_id,
@@ -595,6 +647,7 @@ export class CatalogService {
         id: row.pkg_id,
         sourceId: row.source_id,
         packageName: row.package_name,
+        sourceKind: row.source_kind,
         latestPublicationId: row.latest_publication_id,
         createdAt: row.pkg_created_at,
         updatedAt: row.pkg_updated_at,

@@ -215,6 +215,13 @@ a.tag:hover { border-color:var(--m-cobalt-line); color:var(--cobalt); }.tag.stro
 .skill-item strong { font-size:14px; }
 .skill-item p { margin-top:4px; color:var(--muted); font-size:12px; line-height:1.55; }
 .skill-item code { display:block; margin-top:12px; overflow-wrap:anywhere; color:var(--muted); font-family:var(--m-font-mono); font-size:9px; }
+.discovery-section .skill-item :is(strong,p) { overflow-wrap:anywhere; }
+.discovery-section .discovery-schema{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.discovery-section summary{cursor:pointer;color:var(--muted);font-size:12px}
+.discovery-section summary:focus-visible{outline:2px solid var(--cobalt);outline-offset:4px}
+.discovery-section pre{max-height:360px;overflow:auto;padding:12px;border-radius:9px;background:var(--fog);white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+.discovery-section .discovery-parameters{margin:12px 0 0;padding:0;list-style:none;font-size:12px}
+.discovery-section .discovery-parameters li{padding:8px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
 .member-id { color:var(--muted); font-family:var(--m-font-mono); font-size:10px; text-align:right; }
 .server-action { min-width:128px; text-align:right; white-space:nowrap; }
 .server-action button { min-height:34px; padding:0 12px; font-size:11px; }

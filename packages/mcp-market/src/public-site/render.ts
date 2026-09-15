@@ -540,19 +540,45 @@ const mcpJsonOf = (input: {
   packageName: string;
   version: string;
   serverId: string;
+  endpoint?: string;
 }): string =>
   JSON.stringify(
     {
       mcpServers: {
-        [input.serverId]: {
-          command: "npx",
-          args: ["-y", `${input.packageName}@${input.version}`],
-        },
+        [input.serverId]: input.endpoint
+          ? { url: input.endpoint }
+          : {
+              command: "npx",
+              args: ["-y", `${input.packageName}@${input.version}`],
+            },
       },
     },
     null,
     2,
   );
+
+const discoveryDetails = (metadata: NormalizedPackageVersion): string => {
+  const sections = [
+    ["Resources", metadata.resources],
+    ["资源模板", metadata.resourceTemplates],
+    ["Prompts", metadata.prompts],
+  ] as const;
+  return `${
+    metadata.serverInfo
+      ? `<section class="detail-section discovery-section"><div class="section-heading"><h2>服务信息</h2><p class="lede">远端声明的服务元数据</p></div><div class="source-panel"><dl class="source-grid">${Object.entries(
+          metadata.serverInfo,
+        )
+          .map(
+            ([key, value]) =>
+              `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`,
+          )
+          .join(
+            "",
+          )}<div><dt>声明能力</dt><dd>${escapeHtml(Object.keys(metadata.capabilities ?? {}).join(" / ") || "无")}</dd></div></dl></div></section>`
+      : ""
+  }
+${sections.map(([title, items]) => (items?.length ? `<section class="detail-section discovery-section"><div class="section-heading"><h2>${title}</h2><p class="lede">${items.length} 个可发现条目</p></div><ul class="skill-list">${items.map((item) => `<li class="skill-item"><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description ?? "未提供描述")}</p>${"uri" in item ? `<code>${escapeHtml(item.uri)}</code>` : "uriTemplate" in item ? `<code>${escapeHtml(item.uriTemplate)}</code>` : ""}${"mimeType" in item && item.mimeType ? `<p>${escapeHtml(item.mimeType)}${"size" in item && item.size !== undefined ? ` · ${item.size} bytes` : ""}</p>` : ""}${"arguments" in item ? (item.arguments.length ? `<ul class="discovery-parameters">${item.arguments.map((argument) => `<li><span class="mono">${escapeHtml(argument.name)}</span> <span class="tag">${argument.required ? "必填" : "可选"}</span>${argument.description ? `<p>${escapeHtml(argument.description)}</p>` : ""}</li>`).join("")}</ul>` : `<p>无需参数</p>`) : ""}</li>`).join("")}</ul></section>` : "")).join("")}`;
+};
 
 const serverList = (input: {
   packageName: string;
@@ -571,11 +597,21 @@ ${tableRegion(
 ${input.metadata.servers
   .map(
     (server) =>
-      `<tr><td class="mono">${escapeHtml(server.id)}</td><td>${escapeHtml(server.transport)}</td><td>${escapeHtml(server.runtime ?? "—")}</td><td class="server-action"><button type="button" data-copy-mcp>复制 JSON</button><span class="copy-status" data-copy-status aria-live="polite"></span><pre hidden data-mcp-json>${escapeHtml(mcpJsonOf({ packageName: input.packageName, version: input.version, serverId: server.id }))}</pre></td></tr>`,
+      `<tr><td class="mono">${escapeHtml(server.id)}</td><td>${escapeHtml(server.transport)}</td><td>${escapeHtml(server.runtime ?? "—")}</td><td class="server-action"><button type="button" data-copy-mcp>复制 JSON</button><span class="copy-status" data-copy-status aria-live="polite"></span><pre hidden data-mcp-json>${escapeHtml(mcpJsonOf({ packageName: input.packageName, version: input.version, serverId: server.id, endpoint: server.endpoint }))}</pre></td></tr>`,
   )
   .join("")}
 </tbody></table>`,
-)}</section>`;
+)}
+${input.metadata.servers
+  .filter((server) => server.endpoint)
+  .map(
+    (server) =>
+      `<p>Streamable HTTP endpoint：<code>${escapeHtml(server.endpoint ?? "")}</code></p>`,
+  )
+  .join("")}
+${discoveryDetails(input.metadata)}
+${input.metadata.tools?.length ? `<section class="detail-section discovery-section"><div class="section-heading"><h2>MCP Tools</h2><p class="lede">${input.metadata.tools.length} 个工具 · 仅展示定义，未执行工具</p></div><ul class="skill-list">${input.metadata.tools.map((tool) => `<li class="skill-item"><strong>${escapeHtml(tool.name)}</strong><p>${escapeHtml(tool.description ?? "未提供描述")}</p><details class="discovery-schema"><summary>输入 schema</summary><pre>${escapeHtml(JSON.stringify(tool.inputSchema, null, 2))}</pre></details>${tool.outputSchema === undefined ? "" : `<details class="discovery-schema"><summary>输出 schema</summary><pre>${escapeHtml(JSON.stringify(tool.outputSchema, null, 2))}</pre></details>`}</li>`).join("")}</ul></section>` : ""}
+</section>`;
 
 const trustPanel = (input: {
   packageName: string;
@@ -585,7 +621,8 @@ const trustPanel = (input: {
   metadata: NormalizedPackageVersion;
   homepageUrl: string | null;
 }): string => {
-  const href = safeHref(input.homepageUrl);
+  const http = input.metadata.sourceKind === "http";
+  const href = http ? null : safeHref(input.homepageUrl);
   return `<section class="detail-section source-section"><div class="section-heading"><h2>来源与版本</h2><p class="lede">发布信息与制品标识</p></div>
 <div class="source-panel">
 <dl class="source-grid">
@@ -593,10 +630,10 @@ const trustPanel = (input: {
 <div><dt>Registry</dt><dd>${escapeHtml(input.sourceId)}</dd></div>
 <div><dt>版本</dt><dd class="mono">${escapeHtml(input.version)}</dd></div>
 <div><dt>市场公开</dt><dd>${timeElement(input.publishedAt)}</dd></div>
-<div><dt>NPM 发布</dt><dd>${timeElement(input.metadata.publishedAt)}</dd></div>
+${http ? "" : `<div><dt>NPM 发布</dt><dd>${timeElement(input.metadata.publishedAt)}</dd></div>`}
 <div class="source-integrity"><dt>Integrity</dt><dd class="mono">${escapeHtml(input.metadata.integrity ?? "未提供")}</dd></div>
 </dl>
-${href ? `<p class="source-link">在 NPM 查看：<a href="${escapeHtml(href)}" rel="noopener noreferrer nofollow" target="_blank">${escapeHtml(input.packageName)}</a></p>` : ""}<p class="disclaimer">市场只做目录收录，不代表已对代码、依赖或制品进行安全认证；版本状态与制品始终以 NPM 为准。</p>
+${href ? `<p class="source-link">在 NPM 查看：<a href="${escapeHtml(href)}" rel="noopener noreferrer nofollow" target="_blank">${escapeHtml(input.packageName)}</a></p>` : ""}<p class="disclaimer">${http ? "HTTP 工具清单是只读元数据快照，未执行工具，schema 仅为受限结构投影，不代表服务安全认证。" : "市场只做目录收录，不代表已对代码、依赖或制品进行安全认证；版本状态与制品始终以 NPM 为准。"}</p>
 </div></section>`;
 };
 

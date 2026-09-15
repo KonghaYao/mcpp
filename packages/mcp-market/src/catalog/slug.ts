@@ -9,8 +9,37 @@
 const SLUG_PREFIX = "p-";
 const SLUG_BODY_PATTERN = /^[A-Za-z0-9_-]+$/;
 
-export const toPackageSlug = (packageName: string): string =>
-  `${SLUG_PREFIX}${Buffer.from(packageName, "utf8").toString("base64url")}`;
+export const isHttpSource = (sourceId: string): boolean =>
+  sourceId.startsWith("http:");
+
+export const toPackageSlug = (packageName: string, sourceId = "npm"): string =>
+  isHttpSource(sourceId)
+    ? `h-${Buffer.from(JSON.stringify([sourceId, packageName]), "utf8").toString("base64url")}`
+    : `${SLUG_PREFIX}${Buffer.from(packageName, "utf8").toString("base64url")}`;
+
+export const fromHttpSlug = (
+  slug: string,
+): { sourceId: string; packageName: string } | null => {
+  if (!slug.startsWith("h-") || slug.length > 1024) return null;
+  try {
+    const value: unknown = JSON.parse(
+      Buffer.from(slug.slice(2), "base64url").toString("utf8"),
+    );
+    if (!Array.isArray(value) || value.length !== 2) return null;
+    const [sourceId, packageName] = value;
+    if (
+      typeof sourceId !== "string" ||
+      !isHttpSource(sourceId) ||
+      typeof packageName !== "string" ||
+      !packageName ||
+      toPackageSlug(packageName, sourceId) !== slug
+    )
+      return null;
+    return { sourceId, packageName };
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Returns the package name only for canonical encodings. Non-canonical input

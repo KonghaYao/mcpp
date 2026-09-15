@@ -15,7 +15,7 @@
 import { Hono, type Context } from "hono";
 import type { AppEnv } from "../env.ts";
 import { MAX_PAGE_SIZE, type CatalogService } from "../catalog/service.ts";
-import { fromPackageSlug } from "../catalog/slug.ts";
+import { fromHttpSlug, fromPackageSlug } from "../catalog/slug.ts";
 import {
   renderHome,
   renderList,
@@ -138,7 +138,8 @@ export const publicRoutes = (
 
   routes.get("/market/:slug", async (c) => {
     const slug = c.req.param("slug");
-    if (fromPackageSlug(slug) === null) return notFound(c);
+    if (fromPackageSlug(slug) === null && fromHttpSlug(slug) === null)
+      return notFound(c);
 
     const detail = read(() => catalog.getPublicPackage(slug));
     // Visibility is settled before the cache is consulted so that a leftover
@@ -154,7 +155,8 @@ export const publicRoutes = (
   routes.get("/market/:slug/v/:version", async (c) => {
     const slug = c.req.param("slug");
     const version = c.req.param("version");
-    if (fromPackageSlug(slug) === null) return notFound(c);
+    if (fromPackageSlug(slug) === null && fromHttpSlug(slug) === null)
+      return notFound(c);
 
     const rendered = read(() => catalog.getPublicVersion(slug, version));
     if (rendered === null) return notFound(c);
@@ -190,6 +192,7 @@ export const publicRoutes = (
       {
         items: results.items.map((item) => ({
           slug: item.slug,
+          sourceKind: item.sourceKind,
           displayName: item.metadata.displayName,
           summary: item.metadata.summary,
           isExpertTeam: item.isExpertTeam,

@@ -11,6 +11,7 @@ type PackageRow = {
   id: string;
   source_id: string;
   package_name: string;
+  source_kind: "npm" | "http";
   latest_publication_id: string | null;
   created_at: string;
   updated_at: string;
@@ -34,6 +35,7 @@ type JoinedRow = {
   pkg_id: string;
   source_id: string;
   package_name: string;
+  source_kind: "npm" | "http";
   latest_publication_id: string | null;
   pkg_created_at: string;
   pkg_updated_at: string;
@@ -58,6 +60,7 @@ const toPackage = (row: PackageRow): MarketPackage => ({
   id: row.id,
   sourceId: row.source_id,
   packageName: row.package_name,
+  sourceKind: row.source_kind,
   latestPublicationId: row.latest_publication_id,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -80,6 +83,7 @@ const JOINED_COLUMNS = [
   "p.id AS pkg_id",
   "p.source_id AS source_id",
   "p.package_name AS package_name",
+  "p.source_kind AS source_kind",
   "p.latest_publication_id AS latest_publication_id",
   "p.created_at AS pkg_created_at",
   "p.updated_at AS pkg_updated_at",
@@ -102,6 +106,7 @@ const mapJoined = (row: JoinedRow): PackageWithPublication => ({
     id: row.pkg_id,
     sourceId: row.source_id,
     packageName: row.package_name,
+    sourceKind: row.source_kind,
     latestPublicationId: row.latest_publication_id,
     createdAt: row.pkg_created_at,
     updatedAt: row.pkg_updated_at,
@@ -402,13 +407,24 @@ export class CatalogRepository {
           ),
         ),
         toSearchText(
-          searchableTextOf(
-            metadata.servers.flatMap((server) => [
+          searchableTextOf([
+            ...metadata.servers.flatMap((server) => [
               server.id,
               server.transport,
               server.runtime,
             ]),
-          ),
+            ...[
+              ...(metadata.skills ?? []),
+              ...(metadata.resources ?? []),
+              ...(metadata.resourceTemplates ?? []),
+              ...(metadata.prompts ?? []),
+            ].flatMap((item) => [item.name, item.description]),
+            ...Object.values(metadata.serverInfo ?? {}),
+            ...(metadata.tools ?? []).flatMap((tool) => [
+              tool.name,
+              tool.description,
+            ]),
+          ]),
         ),
       );
   }

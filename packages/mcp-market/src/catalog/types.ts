@@ -2,6 +2,7 @@ export type MarketPackage = {
   id: string;
   sourceId: string;
   packageName: string;
+  sourceKind: "npm" | "http";
   latestPublicationId: string | null;
   createdAt: string;
   updatedAt: string;

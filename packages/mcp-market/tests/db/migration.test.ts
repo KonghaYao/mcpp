@@ -8,6 +8,7 @@
  * forbidden to produce, so those guards cannot quietly rot.
  */
 
+import { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -121,8 +122,14 @@ describe("fresh database", () => {
             []
           >("SELECT version, name FROM schema_migrations")
           .all(),
-      ).toEqual([{ version: 1, name: "0001_market.sql" }]);
-      expect(supportsFts5(db)).toBe(true);
+      ).toEqual([
+        { version: 1, name: "0001_market.sql" },
+        { version: 2, name: "0002_http_sources.sql" },
+      ]);
+      expect(objects(db, "table")).not.toContain("http_sources");
+      expect(db.query("SELECT source_kind FROM market_packages").all()).toEqual(
+        [],
+      );
       expect(
         db.query("SELECT count(*) AS total FROM market_search").get(),
       ).toEqual({ total: 0 });
@@ -143,7 +150,7 @@ describe("fresh database", () => {
     try {
       expect(
         second.query("SELECT count(*) AS total FROM schema_migrations").get(),
-      ).toEqual({ total: 1 });
+      ).toEqual({ total: 2 });
       expect(
         second.query("SELECT count(*) AS total FROM market_packages").get(),
       ).toEqual({ total: 1 });
@@ -265,4 +272,48 @@ describe("storage invariants", () => {
         .run("ra-1", "pkg-1", NOW, null, "maybe", null, "req"),
     ).toThrow();
   });
+});
+
+test("升级原始 npm 数据库只加字段，不增加任何表", async () => {
+  const db = new Database(":memory:");
+  try {
+    db.exec(
+      await Bun.file(
+        new URL("../../migrations/0001_market.sql", import.meta.url),
+      ).text(),
+    );
+    db.exec(
+      "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,name TEXT NOT NULL,applied_at TEXT NOT NULL)",
+    );
+    db.query("INSERT INTO schema_migrations VALUES(1,'0001_market.sql',?)").run(
+      NOW,
+    );
+    insertPackage(db, { id: "legacy" });
+    insertPublication(db, { id: "publication", packageId: "legacy" });
+    const tables = objects(db, "table");
+    await migrate(db);
+    expect(objects(db, "table")).toEqual(tables);
+    expect(
+      db
+        .query(
+          "SELECT source_kind, endpoint, definition_revision FROM market_packages WHERE id='legacy'",
+        )
+        .get(),
+    ).toEqual({ source_kind: "npm", endpoint: null, definition_revision: 1 });
+    expect(
+      db
+        .query(
+          "SELECT metadata_json FROM market_publications WHERE id='publication'",
+        )
+        .get(),
+    ).toEqual({ metadata_json: "{}" });
+    insertPackage(db, { id: "new-npm", name: "other" });
+    expect(
+      db
+        .query("SELECT source_kind FROM market_packages WHERE id='new-npm'")
+        .get(),
+    ).toEqual({ source_kind: "npm" });
+  } finally {
+    db.close();
+  }
 });

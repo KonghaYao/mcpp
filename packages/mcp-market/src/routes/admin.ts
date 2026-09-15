@@ -9,6 +9,7 @@
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
+  renderHttpSources,
   renderAdminNotFound,
   renderDashboard,
   renderLogin,
@@ -238,6 +239,81 @@ export const adminRoutes = (
     return { ok: true, session };
   };
 
+  routes.get("/http-sources", async (c) => {
+    const session = await requireSession(c);
+    if (!session) return rejectUnauthenticated(c);
+    const sources = admin.httpSources;
+    if (!sources) return fail(c, new AppError("INVALID_INPUT"));
+    const id = c.req.query("id");
+    return c.body(
+      renderHttpSources({
+        csrfToken: await auth.csrfTokenFor(session),
+        sources: sources.list(),
+        source: id ? sources.get(id) : undefined,
+      }),
+      200,
+      { ...HTML, "Cache-Control": NO_STORE },
+    );
+  });
+
+  for (const action of ["save", "preview", "sync"] as const) {
+    routes.post(`/http-sources/${action}`, async (c) => {
+      const guarded = await guard(c);
+      if (!guarded.ok) return guarded.response;
+      const sources = admin.httpSources;
+      if (!sources) return fail(c, new AppError("INVALID_INPUT"));
+      const view: Parameters<typeof renderHttpSources>[0] = {
+        csrfToken: await auth.csrfTokenFor(guarded.session),
+        sources: sources.list(),
+      };
+      const id = (await formField(c, "id")) ?? "";
+      try {
+        if (action === "save") {
+          view.source = sources.save({
+            id: id || undefined,
+            packageName: (await formField(c, "packageName")) ?? "",
+            displayName: (await formField(c, "displayName")) ?? "",
+            endpoint: (await formField(c, "endpoint")) ?? "",
+            protocol: (await formField(c, "protocol")) ?? "2025",
+          });
+          view.sources = sources.list();
+          view.preview = await sources.preview(view.source.id);
+        } else {
+          view.source = sources.get(id);
+          if (action === "preview") view.preview = await sources.preview(id);
+          else
+            view.outcome = await admin.syncHttp(
+              id,
+              (await formField(c, "previewDigest")) ?? "",
+              c.get("requestId") ?? "",
+            );
+        }
+      } catch (error) {
+        // 不回显未校验的表单、远端正文、URL 或底层异常。
+        const messages: Partial<Record<AppError["code"], string>> = {
+          PREVIEW_CHANGED: "源定义或内容已变化，请重新读取预览后确认。",
+          INVALID_INPUT:
+            "定义无效：请检查名称、协议和 endpoint。地址支持公网 HTTP / HTTPS，不允许内网地址、URL 凭据、查询参数或片段；本地连接需开启 loopback 设置。",
+          HTTP_SOURCE_UNAVAILABLE:
+            "HTTP 源连接失败：请检查服务是否可达及所选 MCP 协议是否匹配；也可能是请求超时或服务需要鉴权。",
+          METADATA_INVALID:
+            "HTTP 源操作失败：服务响应不符合所选 MCP 协议或元数据校验要求，请检查协议版本、工具 schema 及疑似敏感字段。",
+          METADATA_TOO_LARGE: "HTTP 源数据超过大小、分页或结构复杂度限制。",
+          PUBLICATION_NOT_FOUND: "HTTP 源不存在，请刷新列表后重试。",
+        };
+        view.error =
+          (isAppError(error) ? messages[error.code] : undefined) ??
+          "HTTP 源操作失败，请稍后重试。";
+      }
+      view.sources = sources.list();
+      if (view.source) view.source = sources.get(view.source.id);
+      return c.body(renderHttpSources(view), 200, {
+        ...HTML,
+        "Cache-Control": NO_STORE,
+      });
+    });
+  }
+
   const publishPage = async (
     c: AdminContext,
     session: string,
@@ -304,23 +380,16 @@ export const adminRoutes = (
     if (!guarded.ok) return guarded.response;
     const packageName = (await formField(c, "packageName")) ?? "";
     const exactVersion = (await formField(c, "exactVersion")) ?? "";
-    // The slug is a pure encoding of the package name, so a failure path can
-    // still find the package page before anything has been written.
-    const slug = toPackageSlug(packageName);
+    // 新表单携带来源隔离的 slug；旧 npm 表单仍可按 package name 定位。
+    const slug =
+      (await formField(c, "packageSlug")) ?? toPackageSlug(packageName);
     try {
-      const outcome =
-        direction === "hide"
-          ? await admin.unpublish({
-              packageName,
-              exactVersion,
-              requestId: c.get("requestId") ?? "",
-            })
-          : await admin.publish({
-              packageName,
-              exactVersion,
-              previewDigest: null,
-              requestId: c.get("requestId") ?? "",
-            });
+      const outcome = await admin.changeStoredVisibility({
+        slug,
+        exactVersion,
+        visible: direction === "show",
+        requestId: c.get("requestId") ?? "",
+      });
       const detail = catalog.getAdminPackage(outcome.change.packageSlug);
       if (!detail)
         return c.body(

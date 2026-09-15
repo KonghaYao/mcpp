@@ -7,6 +7,8 @@
  * catalogue directly.
  */
 
+import { HttpMcpClient } from "./http-source/client.ts";
+import { HttpSourceService } from "./http-source/service.ts";
 import { Hono } from "hono";
 import { AdminService } from "./admin/service.ts";
 import { AdminAuthService } from "./admin-auth/service.ts";
@@ -80,7 +82,19 @@ export function createApplication(deps: AppDependencies): Application {
       registryHomepageUrl: config.registryHomepageUrl,
     });
   const auth = new AdminAuthService(config);
-  const admin = new AdminService({ catalog, registry, publicSite, config });
+  const httpSources = new HttpSourceService(
+    db,
+    new HttpMcpClient({
+      allowLoopback: config.httpAllowLoopback ?? false,
+    }),
+  );
+  const admin = new AdminService({
+    catalog,
+    registry,
+    publicSite,
+    config,
+    httpSources,
+  });
 
   const app = new Hono<AppEnv>();
 

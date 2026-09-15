@@ -6,6 +6,10 @@
  * form carries is the digest of the exact snapshot rendered here.
  */
 
+import { toPackageSlug } from "../catalog/slug.ts";
+import type { HttpSource } from "../http-source/service.ts";
+import type { PublicationPreview } from "../npm-registry/types.ts";
+import type { MutationOutcome } from "./service.ts";
 import type { AdminPackageVersion } from "../catalog/service.ts";
 import { escapeHtml, safeHref, THEME_TOKENS } from "../html.ts";
 import type { NormalizedPackageVersion } from "../npm-registry/types.ts";
@@ -61,6 +65,49 @@ th { color:var(--muted); font-weight:500; }
 .error { color:var(--coral); font-size:12px; margin-top:8px; }
 ul.agents { margin:6px 0 0; padding-left:18px; font-size:12px; color:var(--muted); }
 .empty { color:var(--muted); font-size:12px; padding:14px 0; }
+.http-sources .section-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.http-sources .section-heading h2,.http-sources .panel h2 { margin:0; }
+.http-sources .section-heading p { margin:4px 0 0; }
+.http-sources .actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.http-sources .actions form { margin:0; }
+.http-sources .actions a { font-size:12px; color:var(--cobalt); }
+.http-sources .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; margin:8px 0 18px; }
+.http-sources .form-grid .wide { grid-column:1/-1; }
+.http-sources select { width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 11px; font:inherit; font-size:13px; background:#fff; color:var(--ink); }
+.http-sources input,.http-sources select { margin-top:5px; }
+.http-sources .form-note { display:block; margin-top:4px; font-size:11px; color:var(--muted); }
+.http-sources details>summary { cursor:pointer; font-size:12px; font-weight:600; overflow-wrap:anywhere; }
+.http-sources .definition>summary { font-size:15px; }
+.http-sources .definition[open]>summary { margin-bottom:12px; }
+.http-sources .capability-nav { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+.http-sources .capability-nav a { text-decoration:none; padding:5px 10px; }
+.http-sources .capability-group { margin-top:24px; scroll-margin-top:20px; }
+.http-sources .capability-group h3 { margin:0; font-size:14px; }
+.http-sources p.empty { padding:4px 0; margin:0; }
+.http-sources .capability-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:0; padding:0; list-style:none; }
+.http-sources .capability-item { min-width:0; border:1px solid var(--line); border-radius:12px; padding:14px; }
+.http-sources .capability-item strong { display:block; font-size:13px; overflow-wrap:anywhere; }
+.http-sources .capability-item p { margin:6px 0; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.http-sources .capability-item code { display:block; margin-top:10px; color:var(--muted); overflow-wrap:anywhere; font-size:11px; }
+.http-sources .capability-item details { margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+.http-sources .parameter-list { margin:10px 0 0; padding:0; list-style:none; font-size:11px; }
+.http-sources .parameter-list li { padding:5px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+.http-sources .parameter-list code { display:inline; margin:0; color:var(--ink); }
+.http-sources .technical { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; }
+.http-sources pre { max-height:360px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border-radius:9px; background:var(--fog); font-size:11px; }
+.http-sources .table-scroll { overflow-x:auto; margin-top:14px; }
+.http-sources .table-scroll table { margin:0; min-width:640px; }
+.http-sources .table-scroll td { vertical-align:top; }
+.http-sources .endpoint-cell { max-width:260px; overflow-wrap:anywhere; }
+.http-sources .source-state { margin:14px 0; padding:10px 12px; background:var(--fog); border-radius:9px; }
+.http-sources .kv { grid-template-columns:110px minmax(0,1fr); margin:14px 0 0; }
+.http-sources :is(a,button,input,select,summary):focus-visible { outline:2px solid var(--cobalt); outline-offset:3px; }
+@media (max-width:640px) {
+  .http-sources .form-grid,.http-sources .capability-list { grid-template-columns:minmax(0,1fr); }
+  .http-sources .section-heading { align-items:flex-start; flex-direction:column; gap:10px; }
+  .http-sources .kv { grid-template-columns:minmax(0,1fr); gap:3px; }
+  .http-sources .kv dd { margin-bottom:8px; }
+}
 `;
 
 const layout = (title: string, body: string, csrfToken: string): string =>
@@ -76,7 +123,7 @@ const layout = (title: string, body: string, csrfToken: string): string =>
 <body>
 <header class="bar"><div class="inner">
 <a class="brand" href="/admin">MCPM Admin</a>
-<nav><a href="/admin">条目</a><a href="/admin/publish">发布版本</a><a href="/">公开市场</a></nav>
+<nav><a href="/admin">条目</a><a href="/admin/publish">发布版本</a><a href="/admin/http-sources">HTTP 源</a><a href="/">公开市场</a></nav>
 <form method="post" action="/admin/logout" style="margin-left:auto">
 <input type="hidden" name="csrf" value="${escapeHtml(csrfToken)}">
 <button class="secondary" type="submit">退出</button>
@@ -238,6 +285,7 @@ export const renderDashboard = (input: {
   packages: Array<{
     slug: string;
     packageName: string;
+    sourceId: string;
     latestVersion: string | null;
     visibleVersions: number;
     totalVersions: number;
@@ -255,7 +303,7 @@ ${
 ${input.packages
   .map(
     (entry) => `<tr>
-<td class="mono">${escapeHtml(entry.packageName)}</td>
+<td class="mono">${escapeHtml(entry.packageName)}<br><small>${escapeHtml(entry.sourceId)}</small></td>
 <td class="mono">${entry.latestVersion ? escapeHtml(entry.latestVersion) : "（无）"}</td>
 <td>${entry.visibleVersions} / ${entry.totalVersions}</td>
 <td>${
@@ -327,12 +375,14 @@ ${
     ? `<form method="post" action="/admin/unpublish">
 <input type="hidden" name="csrf" value="${escapeHtml(input.csrfToken)}">
 <input type="hidden" name="packageName" value="${escapeHtml(input.packageName)}">
+<input type="hidden" name="packageSlug" value="${escapeHtml(input.slug)}">
 <input type="hidden" name="exactVersion" value="${escapeHtml(version.version)}">
 <button class="danger" type="submit">下架</button>
 </form>`
     : `<form method="post" action="/admin/restore">
 <input type="hidden" name="csrf" value="${escapeHtml(input.csrfToken)}">
 <input type="hidden" name="packageName" value="${escapeHtml(input.packageName)}">
+<input type="hidden" name="packageSlug" value="${escapeHtml(input.slug)}">
 <input type="hidden" name="exactVersion" value="${escapeHtml(version.version)}">
 <button class="secondary" type="submit">恢复（用原快照）</button>
 </form>`
@@ -345,6 +395,113 @@ ${
 <p class="lede" style="margin-top:16px"><a href="/market/${escapeHtml(input.slug)}">查看公开页面</a></p>`,
     input.csrfToken,
   );
+
+const httpSchema = (label: string, schema: unknown): string =>
+  `<details><summary>${escapeHtml(label)}</summary><pre>${escapeHtml(JSON.stringify(schema, null, 2))}</pre></details>`;
+
+const httpDiscoveryGroups = (metadata: NormalizedPackageVersion): string => {
+  const groups = [
+    {
+      id: "tools",
+      title: "Tools",
+      items: (metadata.tools ?? []).map(
+        (tool) =>
+          `<li class="capability-item"><strong>${escapeHtml(tool.name)}</strong><p>${escapeHtml(tool.description ?? "未提供描述")}</p>${httpSchema("输入 schema", tool.inputSchema)}${tool.outputSchema === undefined ? "" : httpSchema("输出 schema", tool.outputSchema)}</li>`,
+      ),
+    },
+    {
+      id: "skills",
+      title: "Skills",
+      items: (metadata.skills ?? []).map(
+        (skill) =>
+          `<li class="capability-item"><strong>${escapeHtml(skill.name)}</strong><p>${escapeHtml(skill.description ?? "未提供描述")}</p><code>${escapeHtml(skill.uri)}</code></li>`,
+      ),
+    },
+    {
+      id: "resources",
+      title: "Resources",
+      items: (metadata.resources ?? []).map(
+        (resource) =>
+          `<li class="capability-item"><strong>${escapeHtml(resource.name)}</strong><p>${escapeHtml(resource.description ?? "未提供描述")}</p><code>${escapeHtml(resource.uri)}</code><p>${escapeHtml(resource.mimeType ?? "未提供类型")}${resource.size === undefined ? "" : ` · ${resource.size} bytes`}</p></li>`,
+      ),
+    },
+    {
+      id: "templates",
+      title: "资源模板",
+      items: (metadata.resourceTemplates ?? []).map(
+        (template) =>
+          `<li class="capability-item"><strong>${escapeHtml(template.name)}</strong><p>${escapeHtml(template.description ?? "未提供描述")}</p><code>${escapeHtml(template.uriTemplate)}</code>${template.mimeType ? `<p>${escapeHtml(template.mimeType)}</p>` : ""}</li>`,
+      ),
+    },
+    {
+      id: "prompts",
+      title: "Prompts",
+      items: (metadata.prompts ?? []).map(
+        (prompt) =>
+          `<li class="capability-item"><strong>${escapeHtml(prompt.name)}</strong><p>${escapeHtml(prompt.description ?? "未提供描述")}</p>${prompt.arguments.length ? `<ul class="parameter-list">${prompt.arguments.map((argument) => `<li><code>${escapeHtml(argument.name)}</code> <span class="tag">${argument.required ? "必填" : "可选"}</span>${argument.description ? `<p>${escapeHtml(argument.description)}</p>` : ""}</li>`).join("")}</ul>` : `<p>无需参数</p>`}</li>`,
+      ),
+    },
+  ];
+  return `<nav class="capability-nav" aria-label="发现能力分组">${groups.map((group) => `<a class="tag ${group.items.length ? "strong" : "muted"}" href="#http-${group.id}">${group.title}：${group.items.length}</a>`).join("")}</nav>${groups.map((group) => (group.items.length ? `<section class="capability-group" id="http-${group.id}" aria-labelledby="http-${group.id}-title"><div class="section-heading"><h3 id="http-${group.id}-title">${group.title}</h3><span class="tag">${group.items.length} 项</span></div><ul class="capability-list">${group.items.join("")}</ul></section>` : `<p class="empty" id="http-${group.id}">${group.title}：未发现条目</p>`)).join("")}`;
+};
+
+export const renderHttpSources = (input: {
+  csrfToken: string;
+  sources: HttpSource[];
+  source?: HttpSource;
+  preview?: PublicationPreview & { confirmationDigest: string };
+  outcome?: MutationOutcome;
+  error?: string;
+}): string => {
+  const csrf = `<input type="hidden" name="csrf" value="${escapeHtml(input.csrfToken)}">`;
+  const source = input.source;
+  const preview = input.preview;
+  return layout(
+    "HTTP 源",
+    `<main class="http-sources">
+<div class="section-heading"><div><h1>HTTP 源</h1><p class="lede">连接 MCP 服务，预览能力清单，确认后发布到连接器。</p></div><a href="/connectors" class="tag">打开连接器列表</a></div>
+<p class="lede">保存定义 → 读取预览 → 确认同步</p>
+${input.error ? `<div class="panel warn" role="alert"><p class="error">${escapeHtml(input.error)}</p>${source ? "<p>定义已保存，读取或同步未完成；公开版本未更改。可修改定义或重新读取预览。</p>" : ""}</div>` : ""}
+${source && !input.outcome ? `<p class="source-state"><span class="tag ${source.latestPublicationId ? "strong" : "muted"}">${source.latestPublicationId ? "已发布" : "未发布"}</span> ${source.latestPublicationId ? "当前公开页面使用已确认快照；修改后需重新预览并确认同步。" : "请检查预览并确认同步，随后会显示在连接器中。"}</p>` : ""}
+${input.outcome ? refreshSummary(input.outcome.refresh) + `<details class="panel"><summary>查看同步记录</summary>${changeSummary(input.outcome.change)}</details>` : ""}
+<details class="panel definition" ${preview ? "" : "open"}><summary>${source ? "编辑定义" : "新增定义"}${source ? ` · ${escapeHtml(source.displayName)}` : ""}</summary>
+<form method="post" action="/admin/http-sources/save">${csrf}
+<input type="hidden" name="id" value="${escapeHtml(source?.id ?? "")}">
+<div class="form-grid">
+<label>Package name<input type="text" name="packageName" required maxlength="128" ${source ? "readonly" : ""} value="${escapeHtml(source?.packageName ?? "")}"><span class="form-note">最多 128 字符，保存后不可改名</span></label>
+<label>公开展示名称<input type="text" name="displayName" required maxlength="120" value="${escapeHtml(source?.displayName ?? "")}"></label>
+<label class="wide">公开 endpoint<input type="text" name="endpoint" required maxlength="1024" value="${escapeHtml(source?.endpoint ?? "")}"><span class="form-note">地址将公开，请勿包含密钥。HTTP 为明文传输，建议优先使用 HTTPS。</span></label>
+<label class="wide">协议<select name="protocol"><option value="2025" ${source?.protocol !== "2026-07-28" ? "selected" : ""}>2025 Streamable HTTP（initialize）</option><option value="2026-07-28" ${source?.protocol === "2026-07-28" ? "selected" : ""}>2026-07-28（server/discover）</option></select></label>
+</div><div class="actions"><button type="submit">保存并读取预览</button><span class="lede">不会自动发布</span></div></form></details>
+${source && !preview ? `<form method="post" action="/admin/http-sources/preview" class="form-row">${csrf}<input type="hidden" name="id" value="${escapeHtml(source.id)}"><button class="secondary" type="submit">手动读取并预览</button></form>` : ""}
+${
+  preview
+    ? `<section class="panel" aria-labelledby="http-preview-title">
+<div class="section-heading"><div><h2 id="http-preview-title">发现结果预览</h2><p class="lede">检查以下内容，确认后公开展示到连接器。</p></div><div class="actions">
+<form method="post" action="/admin/http-sources/sync">${csrf}<input type="hidden" name="id" value="${escapeHtml(preview.ref.sourceId)}"><input type="hidden" name="previewDigest" value="${escapeHtml(preview.confirmationDigest)}"><button type="submit">确认同步</button></form>
+<form method="post" action="/admin/http-sources/preview">${csrf}<input type="hidden" name="id" value="${escapeHtml(preview.ref.sourceId)}"><button class="secondary" type="submit">重新读取预览</button></form></div></div>
+<dl class="kv"><dt>展示名称</dt><dd>${escapeHtml(preview.metadata.displayName ?? preview.metadata.name)}</dd><dt>Package</dt><dd class="mono">${escapeHtml(preview.metadata.name)}</dd>${Object.entries(
+        preview.metadata.serverInfo ?? {},
+      )
+        .map(
+          ([key, value]) =>
+            `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`,
+        )
+        .join(
+          "",
+        )}<dt>声明能力</dt><dd>${escapeHtml(Object.keys(preview.metadata.capabilities ?? {}).join(" / ") || "未声明")}</dd><dt>Endpoint</dt><dd class="mono">${escapeHtml(source?.endpoint ?? preview.metadata.servers[0]?.endpoint ?? "—")}</dd></dl>
+${httpDiscoveryGroups(preview.metadata)}
+<details class="technical" data-snapshot-details><summary>完整快照与校验摘要</summary><p class="lede">即将公开的完整快照；仅用于技术审查。</p><p class="mono">${escapeHtml(preview.metadataDigest)}</p><pre>${escapeHtml(JSON.stringify(preview.metadata, null, 2))}</pre></details>
+<p class="lede" style="margin-top:14px">确认将重新读取；源定义或内容变化必须重新预览。相同内容不会重复生成版本。</p></section>`
+    : ""
+}
+<section class="panel"><div class="section-heading"><h2>已保存的源</h2><a href="/admin/http-sources" class="tag">新增源</a></div>
+${input.sources.length ? `<div class="table-scroll" role="region" aria-label="已保存的 HTTP 源" tabindex="0"><table><thead><tr><th scope="col">名称 / Package</th><th scope="col">Endpoint</th><th scope="col">发布状态</th><th scope="col">操作</th></tr></thead><tbody>${input.sources.map((entry) => `<tr><td><strong>${escapeHtml(entry.displayName)}</strong><br><span class="mono">${escapeHtml(entry.packageName)}</span></td><td class="mono endpoint-cell">${escapeHtml(entry.endpoint)}</td><td><span class="tag ${entry.latestPublicationId ? "strong" : "muted"}">${entry.latestPublicationId ? "已发布" : "未发布"}</span></td><td><div class="actions"><a href="/admin/http-sources?id=${encodeURIComponent(entry.id)}">管理 / 预览</a>${entry.latestPublicationId ? `<a href="/market/${escapeHtml(toPackageSlug(entry.packageName, entry.id))}">查看连接器详情</a>` : ""}</div></td></tr>`).join("")}</tbody></table></div>` : `<p class="empty">尚未添加 HTTP 源，填写上方定义即可开始。</p>`}</section>
+<details class="technical"><summary>连接范围与发布说明</summary><p class="lede">只读取服务信息及 Tools、Skills、Resources、资源模板、Prompts 清单，不执行工具或读取正文。仅支持无鉴权源。公网支持 HTTP / HTTPS（IPv4）；本地开发需设置 MCPM_HTTP_ALLOW_LOOPBACK=true，仅放行 localhost / 127.0.0.1。</p><p class="lede">endpoint 将公开，禁止放入密钥。远端 instructions 不发布；工具 schema 保存有界标准契约（包括枚举与本地引用），不包含 default、examples 或扩展字段。</p></details>
+</main>`,
+    input.csrfToken,
+  );
+};
 
 export const renderAdminNotFound = (csrfToken: string): string =>
   layout(

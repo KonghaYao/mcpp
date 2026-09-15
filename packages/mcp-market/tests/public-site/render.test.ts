@@ -24,6 +24,7 @@ import {
   renderUnavailable,
   renderVersion,
 } from "../../src/public-site/render.ts";
+import { renderHttpSources } from "../../src/admin/pages.ts";
 import { PUBLIC_STYLES } from "../../src/public-site/styles.ts";
 
 /** The seven tokens `src/html.ts` owns; the public site may only inherit them. */
@@ -87,6 +88,7 @@ const summaryOf = (
 ): PackageSummary => ({
   slug: "acme-investment-team",
   sourceId: "npm",
+  sourceKind: "npm",
   packageName: "acme-investment-team",
   metadata: metadata(),
   isExpertTeam: true,
@@ -115,6 +117,186 @@ const detailOf = (
     },
   ],
   ...overrides,
+});
+
+describe("HTTP 发现信息展示", () => {
+  const discovery = () =>
+    metadata({
+      agents: [],
+      sourceKind: "http",
+      serverInfo: { name: "远端服务", version: "1.0", description: "服务说明" },
+      capabilities: { tools: {}, resources: {}, prompts: {} },
+      servers: [
+        {
+          id: "http-service",
+          transport: "streamable-http",
+          runtime: null,
+          endpoint: "http://example.com/mcp",
+        },
+      ],
+      tools: [
+        {
+          name: "lookup",
+          description: "检索工具说明",
+          inputSchema: {
+            type: "object",
+            properties: { query: { type: "string" } },
+          },
+          outputSchema: { type: "object" },
+        },
+      ],
+      resources: [
+        {
+          name: "report",
+          description: "资源说明",
+          uri: "resource://reports/current",
+          mimeType: "text/plain",
+          size: 42,
+        },
+      ],
+      resourceTemplates: [
+        {
+          name: "report-template",
+          description: "模板说明",
+          uriTemplate: "resource://reports/{id}",
+        },
+      ],
+      prompts: [
+        {
+          name: "review",
+          description: "提示词说明",
+          arguments: [
+            { name: "subject", description: "审阅对象", required: true },
+          ],
+        },
+      ],
+    });
+
+  test("管理预览按能力分组，主操作在前，完整 JSON 与 schema 默认折叠", () => {
+    const data = discovery();
+    const html = renderHttpSources({
+      csrfToken: "csrf-marker",
+      sources: [],
+      preview: {
+        ref: {
+          sourceId: "http:fixture",
+          packageName: data.name,
+          exactVersion: data.version,
+        },
+        metadata: data,
+        metadataJson: JSON.stringify(data),
+        metadataDigest: "sha256:preview",
+        confirmationDigest: "confirmation-marker",
+      },
+    });
+    for (const text of [
+      "检索工具说明",
+      "资源说明",
+      "模板说明",
+      "提示词说明",
+      "审阅对象",
+      "服务说明",
+      "financial-analysis",
+    ])
+      expect(html).toContain(text);
+    expect(html).toContain('aria-label="发现能力分组"');
+    expect(html).toContain('name="csrf" value="csrf-marker"');
+    expect(html).toContain('name="previewDigest" value="confirmation-marker"');
+    expect(html).toContain("<details><summary>输入 schema</summary>");
+    expect(html).toContain('<details class="technical" data-snapshot-details>');
+    expect(html.indexOf('action="/admin/http-sources/sync"')).toBeLessThan(
+      html.indexOf("data-snapshot-details"),
+    );
+    expect(html).not.toContain('href="resource://');
+  });
+
+  test("公开发现信息复用 Skills 卡片与来源概览，不再直接输出资源 JSON", () => {
+    const html = renderPackage({
+      detail: detailOf({ metadata: discovery(), isExpertTeam: false }),
+      homepageUrl: null,
+    });
+    expect(html).toContain('class="detail-section discovery-section"');
+    expect(html).toContain('class="source-grid"');
+    expect(html).toContain('class="skill-item"><strong>lookup</strong>');
+    expect(html).toContain(
+      '<details class="discovery-schema"><summary>输出 schema</summary>',
+    );
+    expect(html).toContain('class="discovery-parameters"');
+    expect(html).toContain("审阅对象");
+    expect(html).not.toContain("&quot;uriTemplate&quot;");
+    expect(html).not.toContain('href="resource://');
+  });
+
+  test("不可信名称、描述、URI、参数、schema 均转义且长字段可换行", () => {
+    const attack = '<img src=x onerror="alert(1)">';
+    const data = discovery();
+    data.serverInfo = { name: attack };
+    data.tools![0] = {
+      name: attack,
+      description: attack,
+      inputSchema: { type: "object", description: attack },
+    };
+    data.resources![0] = {
+      name: attack,
+      description: attack,
+      uri: `resource://${attack}`,
+    };
+    data.prompts![0]!.arguments[0]!.name = attack;
+    const preview = {
+      ref: {
+        sourceId: "http:fixture",
+        packageName: data.name,
+        exactVersion: data.version,
+      },
+      metadata: data,
+      metadataJson: JSON.stringify(data),
+      metadataDigest: "digest",
+      confirmationDigest: "confirm",
+    };
+    for (const html of [
+      renderHttpSources({ csrfToken: "csrf", sources: [], preview }),
+      renderPackage({
+        detail: detailOf({ metadata: data }),
+        homepageUrl: null,
+      }),
+    ]) {
+      expect(html).not.toContain(attack);
+      expect(html).toContain(escapeHtml(attack));
+      expect(html).not.toMatch(/<[^>]+onerror=/);
+      expect(html).toContain("overflow-wrap:anywhere");
+    }
+  });
+
+  test("空能力为紧凑提示，无源时给出明确下一步", () => {
+    const data = metadata({
+      agents: [],
+      skills: [],
+      tools: [],
+      resources: [],
+      resourceTemplates: [],
+      prompts: [],
+    });
+    const html = renderHttpSources({
+      csrfToken: "csrf",
+      sources: [],
+      preview: {
+        ref: {
+          sourceId: "http:fixture",
+          packageName: data.name,
+          exactVersion: data.version,
+        },
+        metadata: data,
+        metadataJson: "{}",
+        metadataDigest: "digest",
+        confirmationDigest: "confirm",
+      },
+    });
+    expect(html).toContain("尚未添加 HTTP 源");
+    expect(html).toContain("Tools：未发现条目");
+    expect(html).not.toContain('<li class="capability-item">');
+    expect(html).toContain('class="form-grid"');
+    expect(html).toContain("@media (max-width:640px)");
+  });
 });
 
 /** Every public page, so a shared invariant is checked against all of them. */

@@ -7,6 +7,8 @@
  * separately so a page-refresh failure is never mistaken for a failed publish.
  */
 
+import type { HttpSourceService } from "../http-source/service.ts";
+import { isHttpSource } from "../catalog/slug.ts";
 import type { CatalogService } from "../catalog/service.ts";
 import type { PublicationChange } from "../catalog/types.ts";
 import type { Config } from "../config.ts";
@@ -42,17 +44,74 @@ export class AdminService {
   readonly #registry: NpmRegistryService;
   readonly #publicSite: PublicSiteService;
   readonly #sourceId: string;
+  readonly httpSources?: HttpSourceService;
 
   constructor(input: {
     catalog: CatalogService;
     registry: NpmRegistryService;
     publicSite: PublicSiteService;
     config: Pick<Config, "sourceId">;
+    httpSources?: HttpSourceService;
   }) {
     this.#catalog = input.catalog;
     this.#registry = input.registry;
     this.#publicSite = input.publicSite;
     this.#sourceId = input.config.sourceId;
+    this.httpSources = input.httpSources;
+  }
+
+  async syncHttp(
+    sourceId: string,
+    previewDigest: string,
+    requestId: string,
+  ): Promise<MutationOutcome> {
+    if (!this.httpSources) throw new AppError("INVALID_INPUT");
+    if (!/^[a-f0-9]{64}$/.test(previewDigest))
+      throw new AppError("INVALID_INPUT");
+    const preview = await this.httpSources.preview(sourceId);
+    if (preview.confirmationDigest !== previewDigest)
+      throw new AppError("PREVIEW_CHANGED");
+    const change = this.#catalog.syncHttp({
+      definitionRevision: preview.definitionRevision,
+      ...preview.ref,
+      metadataJson: preview.metadataJson,
+      metadataDigest: preview.metadataDigest,
+      requestId,
+    });
+    return this.#commit(change, requestId);
+  }
+
+  async changeStoredVisibility(input: {
+    slug: string;
+    exactVersion: string;
+    visible: boolean;
+    requestId: string;
+  }): Promise<MutationOutcome> {
+    const detail = this.#catalog.getAdminPackage(input.slug);
+    if (!detail) throw new AppError("PUBLICATION_NOT_FOUND");
+    if (detail.sourceId !== this.#sourceId && !isHttpSource(detail.sourceId))
+      throw new AppError("INVALID_INPUT");
+    const exactVersion = assertExactVersion(input.exactVersion);
+    const ref = {
+      sourceId: detail.sourceId,
+      packageName: detail.packageName,
+      exactVersion,
+    };
+    const stored = this.#catalog.findPublicationState(
+      ref.sourceId,
+      ref.packageName,
+      exactVersion,
+    ).publication;
+    if (!stored) throw new AppError("PUBLICATION_NOT_FOUND");
+    const change = input.visible
+      ? this.#catalog.publish({
+          ...ref,
+          metadataJson: stored.metadataJson,
+          metadataDigest: stored.metadataDigest,
+          requestId: input.requestId,
+        })
+      : this.#catalog.unpublish({ ...ref, requestId: input.requestId });
+    return this.#commit(change, input.requestId);
   }
 
   /**
@@ -214,6 +273,12 @@ export class AdminService {
     change: PublicationChange,
     requestId: string,
   ): Promise<MutationOutcome> {
+    if (change.action === "noop")
+      return {
+        change,
+        refresh: { outcome: "skipped", paths: [], errorCode: null },
+        catalogChanged: false,
+      };
     const refresh = await this.#publicSite.invalidate(change);
     this.#recordRefresh(change.packageId, refresh, requestId);
     return { change, refresh, catalogChanged: true };
