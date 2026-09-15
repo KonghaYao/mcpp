@@ -1,13 +1,14 @@
 # @peri-code/mcpp
 
-MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK，提供 Skills 资源挂载、MCP Server 双模式启动、多 Server HTTP 网关，以及 Agent Plugin 清单校验。
+MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK，提供 Skills / Agents 资源挂载、**MCP Apps** 辅助函数、MCP Server 双模式启动、多 Server HTTP 网关，以及 Agent Plugin 清单校验。
 
-> 当前状态：`0.6.5`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
+> 当前状态：`0.8.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
 
 ## 版本更新
 
 | 版本    | 主要更新                                                                                                                                                                                                                                                                                         |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `0.8.0` | 新增 `@peri-code/mcpp/apps`：MCP Apps Server 侧 helper（`ResourceForApps`、`AppPageStore`、工具 `_meta.ui`、工具结果 structuredContent、Singleton 键、HTML 发布校验）。规范见 [MCP Apps](../../MCPP/mcp-apps.md)。                                                                               |
 | `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 MCPP Cache（`McppCache`）、TTL、`public` / `private` scope 和 opaque authorization context 隔离；同时支持协商 Server Cache Version（`cacheVersion`），相等时可直接复用 MCPP Response Cache 与 Resource Content Cache，不相等时拒绝旧条目。 |
 | `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。                                                                                                                                                       |
 | `0.3.0` | 支持将 Skill 根内全部经安全校验的普通文件投影为附属 Resource；新增构建期静态 registry，使无本地文件系统的 Worker 可以挂载 Skills。                                                                                                                                                               |
@@ -18,6 +19,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 - **Skills 资源挂载**：将 `skills/<name>/SKILL.md` 及其目录内经过安全与预算限制的所有普通文件实时投影为 `skill://<name>/<path>` MCP Resource。
 - **Agents 资源挂载**：将通过 frontmatter、UTF-8、大小和路径安全校验的 `agents/<name>/agent.md` 实时投影为 `agent://<name>/agent.md` MCP Resource。
+- **MCP Apps helper**：注册 `ui://` HTML 模板与 `mcpp://apps/pages/.../state` 业务状态 Resource；构造带 `_meta.ui` 的工具定义与含文本回退的 `structuredContent`；`AppPageStore` 提供 revision CAS 与 `operation_id` 幂等；发布前校验单文件 HTML。
 - **Skills 元数据处理**：解析 frontmatter、提取 `io.mcpp/*` 编排字段、生成 SHA-256 digest。
 - **双模式 Server 启动**：默认使用 Streamable HTTP，也可通过 `--stdio` 或配置切换到 stdio。
 - **多 Server HTTP 网关**：在单个端口上按路径挂载多个 MCP endpoint，并隔离各 endpoint、各客户端会话。
@@ -26,7 +28,7 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 - **Serverless 路由**：提供标准 `fetch(Request): Promise<Response>` handler，可嵌入 Worker 或其他 Web Standard 运行时。
 - **插件清单校验**：使用 Zod 校验 Agent Plugin 的 `plugin.json` 与 `mcp.json`。
 
-完整规范见 [`MCPP/index.md`](../../MCPP/index.md)。相关主题包括 [Agent Plugin](../../MCPP/agent-plugin.md)、[MCP Mono Server](../../MCPP/mcp-mono-server.md)、[MCP Channel](../../MCPP/mcp-channel.md) 和 [Channel SDK 接口](../../MCPP/channel-sdk.md)。
+完整规范见 [`MCPP/index.md`](../../MCPP/index.md)。相关主题包括 [Agent Plugin](../../MCPP/agent-plugin.md)、[MCP Apps](../../MCPP/mcp-apps.md)、[MCP Mono Server](../../MCPP/mcp-mono-server.md)、[MCP Channel](../../MCPP/mcp-channel.md) 和 [Channel SDK 接口](../../MCPP/channel-sdk.md)。
 
 ## 运行要求
 
@@ -186,6 +188,83 @@ ResourceForAgents(server, {
 ```
 
 配置组织前缀后，URI 为 `agent://example.org/<name>/agent.md`。辅助 API 也从 `@peri-code/mcpp/agents` 导出，包括 `scanAgentsDir`、`readAgentMeta`、`readAgentResource`、`parseAgentFrontmatter` 和 `agentUri`。
+
+## MCP Apps API
+
+对应规范 [MCP Apps](../../MCPP/mcp-apps.md) §6。本包提供 **Server 侧** helper；Host Bridge、View SDK 与 Singleton 实例注册仍由 Host 实现。
+
+### `ResourceForApps(server, options)`
+
+在 Server 上注册：
+
+- `ui://…` HTML 模板（`text/html;profile=mcp-app`）
+- 可选 `mcpp://apps/pages/{pageId}/state` JSON 状态（需传入 `pageStore`）
+
+```ts
+import {
+  AppPageStore,
+  ResourceForApps,
+  uiResourceUri,
+} from "@peri-code/mcpp/apps";
+
+const pageStore = new AppPageStore({ authScope: "tenant-a" });
+
+ResourceForApps(server, {
+  htmlTemplates: [
+    {
+      uri: uiResourceUri("pages/editor-v1.html"),
+      html: "<!DOCTYPE html><html><body></body></html>",
+    },
+  ],
+  pageStore,
+  cacheScope: "private",
+  authorizationContext: opaqueAuthContextFromHost,
+});
+```
+
+状态变更后，调用方应通过 `subscriptions.resourceUpdated(stateUri)` 通知 Host 使缓存失效（与 Skills 相同）。
+
+### 工具注册与结果
+
+```ts
+import {
+  buildShowPageToolResult,
+  defineAppTool,
+  uiResourceUri,
+} from "@peri-code/mcpp/apps";
+
+const showUi = defineAppTool({
+  name: "mcp_show_ui",
+  description: "打开已有页面",
+  inputSchema: {
+    type: "object",
+    properties: { page_id: { type: "string" } },
+    required: ["page_id"],
+    additionalProperties: false,
+  },
+  ui: {
+    resourceUri: uiResourceUri("pages/editor-v1.html"),
+    visibility: ["model", "app"],
+  },
+});
+
+// tools/call handler 内：
+return buildShowPageToolResult({
+  pageId: "p_123",
+  stateUri: record.stateUri,
+  revision: record.revision,
+  snapshot: record.snapshot,
+});
+```
+
+写工具使用 `AppPageStore.commitWrite`（`expected_revision` + `operation_id`）；`hashWritePayload` 用于操作去重。Functional 展示可用 `buildFunctionalToolResult`。
+
+### 构建与 Singleton
+
+- `validateAppHtml` / `validateAppHtmlEntries`：发布前检查单文件 HTML（裸 ESM import、外部 script 等）。
+- `singletonInstanceKey` / `shouldFocusExistingSingleton`：供 Host 做 Singleton 去重（§3.1）。
+
+其余常量与 URI 辅助函数见 `@peri-code/mcpp/apps` 导出列表。
 
 ## Skills API
 
@@ -457,16 +536,18 @@ const result = validateMcpJson({
 
 ## 导出入口
 
-| 入口                            | 内容                                                                 |
-| ------------------------------- | -------------------------------------------------------------------- |
-| `@peri-code/mcpp`               | 全部公开 API                                                         |
-| `@peri-code/mcpp/skills`        | Skills 扫描、前端元数据、URI、digest、受限 Resource 挂载与纯公开策略 |
-| `@peri-code/mcpp/skills/static` | Worker 的构建期静态 Skill Resource 挂载                              |
-| `@peri-code/mcpp/skills/build`  | 仅构建阶段使用的静态 registry 收集与源码生成                         |
-| `@peri-code/mcpp/server`        | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型                |
-| `@peri-code/mcpp/catalog`       | 只读 Server Catalog 类型、扩展标识、实现与 Catalog 页面 helper       |
-| `@peri-code/mcpp/gateway`       | HTTP gateway 与 serverless routes                                    |
-| `@peri-code/mcpp/plugin`        | `plugin.json`、`mcp.json` schema 与校验函数                          |
+| 入口                            | 内容                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `@peri-code/mcpp`               | 全部公开 API                                                                    |
+| `@peri-code/mcpp/skills`        | Skills 扫描、前端元数据、URI、digest、受限 Resource 挂载与纯公开策略            |
+| `@peri-code/mcpp/skills/static` | Worker 的构建期静态 Skill Resource 挂载                                         |
+| `@peri-code/mcpp/skills/build`  | 仅构建阶段使用的静态 registry 收集与源码生成                                    |
+| `@peri-code/mcpp/agents`        | Agents 扫描、frontmatter 校验与 `ResourceForAgents`                             |
+| `@peri-code/mcpp/apps`          | MCP Apps：HTML/状态 Resource、`AppPageStore`、工具 `_meta.ui`、结果与 HTML 校验 |
+| `@peri-code/mcpp/server`        | 默认 HTTP 地址/端口、`startServer`、`main` 与启动类型                           |
+| `@peri-code/mcpp/catalog`       | 只读 Server Catalog 类型、扩展标识、实现与 Catalog 页面 helper                  |
+| `@peri-code/mcpp/gateway`       | HTTP gateway 与 serverless routes                                               |
+| `@peri-code/mcpp/plugin`        | `plugin.json`、`mcp.json` schema 与校验函数                                     |
 
 ## 开发
 
@@ -474,6 +555,7 @@ const result = validateMcpJson({
 
 ```bash
 bun install
+bun run --cwd packages/mcpp test
 bun run --cwd packages/mcpp typecheck
 ```
 
@@ -481,12 +563,14 @@ bun run --cwd packages/mcpp typecheck
 
 ```bash
 cd packages/mcpp
+bun test
 bun run typecheck
 ```
 
 ## 已知边界
 
 - 当前实现面向 Server 侧，不包含完整的 Agent/Host 生命周期实现。
+- **MCP Apps**：`@peri-code/mcpp/apps` 仅覆盖 Server 侧 HTML/状态 Resource、工具 `_meta.ui`、revision 与工具结果；不包含 Host Bridge、View iframe 生命周期或官方 View SDK 集成。
 - Server 仅支持 MCP `2026-07-28`，不兼容 2025-era 客户端。
 - 默认 subscription 总线为进程内存态；多实例部署必须注入共享 `ServerEventBus`。
 - Skills 目录不会自动监听文件变化；变更后需由应用调用对应的 `subscriptions` 发布方法。

@@ -7,11 +7,13 @@
  *  - server：双模式启动（agent-plugin.md）
  *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（mcp-mono-server.md）
  *  - plugin：plugin.json / mcp.json 校验（agent-plugin.md）
+ *  - apps：MCP Apps 注册、状态、工具结果与 HTML 挂载（mcp-apps.md）
  */
 export * from "./cache.ts";
 export * from "./types.ts";
 export * from "./skills/index.ts";
 export * from "./agents/index.ts";
+export * from "./apps/index.ts";
 export * from "./server/index.ts";
 export * from "./catalog.ts";
 export * from "./gateway.ts";

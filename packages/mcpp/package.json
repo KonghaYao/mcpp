@@ -11,6 +11,7 @@
     "./skills/static": "./src/skills/static-skills.ts",
     "./skills/build": "./src/skills/build-static-skills.ts",
     "./agents": "./src/agents/index.ts",
+    "./apps": "./src/apps/index.ts",
     "./server": "./src/server/index.ts",
     "./catalog": "./src/catalog.ts",
     "./gateway": "./src/gateway.ts",
