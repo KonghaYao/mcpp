@@ -106,6 +106,8 @@ export async function createCacheVersion(
 export interface McppServerCacheOptions {
   /** Server Cache Version；可缓存状态变化时必须改变。 */
   cacheVersion: string;
+  /** 合并其他已启用扩展；其配置必须纳入 cacheVersion 快照。 */
+  extensions?: NonNullable<ServerCapabilities["extensions"]>;
   /** 默认 1 天；设为 0 可禁用条目写入。 */
   ttlMs?: number;
   scope?: McppCacheScope;
@@ -175,6 +177,7 @@ export function createMcppServerFactory(
       authorizationContext,
       capabilities: {
         extensions: {
+          ...options.extensions,
           [MCPP_SERVER_CACHE_VERSION_EXTENSION]: capability,
         },
       },

@@ -17,6 +17,7 @@ import {
   type ServerCatalogEntry,
   type ServerCatalogOptions,
 } from "./catalog.ts";
+import type { FileMount } from "./files/http.ts";
 import {
   DEFAULT_MCPP_HTTP_HOST,
   DEFAULT_MCPP_HTTP_PORT,
@@ -31,6 +32,8 @@ export interface GatewayRoute {
   catalog?: ServerCatalogEntry;
   /** 多进程部署时可为该端点注入共享事件总线。 */
   bus?: ServerEventBus;
+  /** 显式绑定该 endpoint 的文件授权及上传路由；不经只读 fallback。 */
+  files?: FileMount;
 }
 
 /** Gateway 派生的只读 Server Catalog endpoint。 */
@@ -105,11 +108,25 @@ export function createGatewayRoutes(
     return { ...route, path };
   });
 
+  const uploads = new Map<string, FileMount>();
+  const namespaces = new Set<string>();
+  for (const route of normalized) {
+    if (!route.files) continue;
+    if (route.files.endpointPath !== route.path)
+      throw new Error("MCPP gateway: file endpoint mismatch");
+    if (seen.has(route.files.uploadPath) || uploads.has(route.files.uploadPath))
+      throw new Error("MCPP gateway: upload route conflict");
+    if (namespaces.has(route.files.namespace))
+      throw new Error("MCPP gateway: file namespace must be unique");
+    namespaces.add(route.files.namespace);
+    uploads.set(route.files.uploadPath, route.files);
+  }
+
   const catalogOptions = options.catalog;
   const catalogPath = catalogOptions
     ? normalizePath(catalogOptions.path ?? "/catalog/mcp")
     : undefined;
-  if (catalogPath && seen.has(catalogPath)) {
+  if (catalogPath && (seen.has(catalogPath) || uploads.has(catalogPath))) {
     throw new Error(
       `MCPP gateway: catalog path '${catalogPath}' conflicts with a child endpoint`,
     );
@@ -118,12 +135,17 @@ export function createGatewayRoutes(
   const handlers = new Map(
     normalized.map((route) => [
       route.path,
-      createMcpHandler(route.createServer, {
-        legacy: "reject",
-        bus: route.bus,
-        maxSubscriptions: options.maxSubscriptions,
-        keepAliveMs: options.keepAliveMs,
-      }),
+      createMcpHandler(
+        route.files
+          ? route.files.wrapFactory(route.createServer)
+          : route.createServer,
+        {
+          legacy: "reject",
+          bus: route.bus,
+          maxSubscriptions: options.maxSubscriptions,
+          keepAliveMs: options.keepAliveMs,
+        },
+      ),
     ]),
   );
 
@@ -150,8 +172,16 @@ export function createGatewayRoutes(
       subscriptions: handlers.get(path)!.notify,
     })),
     async fetch(request) {
-      const path = normalizePath(new URL(request.url).pathname);
+      const exactPath = new URL(request.url).pathname;
+      const upload = uploads.get(exactPath);
+      if (upload) return upload.fetchUpload(request);
+      const path = normalizePath(exactPath);
       const handler = handlers.get(path);
+      const files = normalized.find((route) => route.path === path)?.files;
+      if (handler && files) {
+        if (exactPath !== path) return new Response(null, { status: 404 });
+        return files.fetchMcp(request, (request) => handler.fetch(request));
+      }
       if (handler) return handler.fetch(request);
       if (options.fallback) return options.fallback(request);
       return new Response("MCPP gateway: route not found", { status: 404 });
@@ -194,6 +224,14 @@ export async function createGateway(
   const bunServer = Bun.serve({
     hostname: host,
     port,
+    ...(routes.some((route) => route.files)
+      ? {
+          maxRequestBodySize: Math.max(
+            1024 * 1024,
+            ...routes.map((route) => route.files?.maxFileBytes ?? 0),
+          ),
+        }
+      : {}),
     fetch: handle.fetch,
   });
 

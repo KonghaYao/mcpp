@@ -77,4 +77,12 @@ flowchart LR
     IDX -. "按需补充（分页 / 缓存刷新）" .-> LIST["server: tools/list"]
 ```
 
+## 6.7 可选文件参数与统一预检
+
+采用 [MCPP Files](19-mcp-files.md) 的工具以 `x-mcpp-file` 标记顶层字符串或有界数组的字符串 `items`；`maxBytes` 是工具大小限制，`accept` 仅为选择提示，不是安全校验。Host 只有在双方协商 `io.mcpp/files` v1 后才向模型提供此类工具；不支持时普通工具继续工作，文件工具目录保持稳定。
+
+Server MUST 在业务 handler 前验证本次全部文件的 ID、稳定授权 scope、endpoint namespace、有效 ready、TTL、payload 大小和内容 validator；任意失败均不执行业务。文件 ID 不是授权凭证，业务目标资源仍须另行授权。`ctx.files` 只暴露已声明文件的只读句柄，禁止无界读取、暴露正式路径或跨请求保留句柄。
+
+不存在、其他身份和过期统一返回 `FILE_UNAVAILABLE`，内容拒绝与超限分别为 `FILE_REJECTED` / `FILE_TOO_LARGE`，存储故障为 `FILE_STORAGE_UNAVAILABLE`，结果 `isError: true` 并包含结构化错误码和参数位置。缺失客户端扩展声明使用核心 `-32021`，不是普通文件错误。上传及工具响应丢失均不由文件 helper 自动重放；未过期合法 ID 可在同一身份和 endpoint 内继续复用。
+
 ---
