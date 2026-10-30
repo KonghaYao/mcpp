@@ -17,12 +17,12 @@ MCP Plus（以下简称 **MCPP**）是在 MCP 2026-07-28 之上的**协议扩展
 
 MCPP 同时具有**双重身份**：
 
-- **规范身份**：MCPP 是一份 **MCP 的规范化规范**（conforming spec）——不发明新的传输语义，只把 Agent 层决策（何时加载 skill、按什么顺序编排、如何缓存工具目录、如何信任远端指令）翻译为可执行、可验证的规范性条款；
+- **规范身份**：MCPP 是一份 **MCP 的规范化规范**（conforming spec）——保持核心传输语义，只把 Agent 层决策（何时加载 skill、按什么顺序编排、如何缓存工具目录、如何信任远端指令）翻译为可执行、可验证的规范性条款；可选的 MCPP Files 另规定同一授权边界的二进制上传端点；
 - **项目身份**：MCPP 的实现是一个**标准的 Agent Plugin**——严格遵守 [agent-plugins.org](https://agent-plugins.org) 1.0.0 的 `plugin.json` / `skills/` / `mcp.json` 布局与约束，是一个可分发、可安装、可审计的标准插件；其执行能力由插件声明的 MCP server 承载。
 
 两种身份互为表里：**项目形态**保证规范落地时可分发、可部署；**规范条款**保证项目行为在 Agent 层可预测、可交互。
 
-MCPP 不脱离 MCP：**所有传输、JSON-RPC、认证、路由、无状态、订阅与 MRTR 语义一律由 MCP 2026-07-28 规范负责**。MCPP 的 Agent 层约定与已登记扩展遵循第 9 章；其中服务端 Channel 推送 **MUST** 完全映射为标准 Resources 与 Subscriptions，MUST NOT 另造 vendor-specific Channel capability 或 notification。
+MCPP 不脱离 MCP：**核心传输、JSON-RPC、认证、路由、无状态、订阅与 MRTR 语义一律由 MCP 2026-07-28 规范负责**。MCPP 的 Agent 层约定与已登记扩展遵循第 9 章；[MCPP Files](mcp-files.md) 是可选的 MCPP 自有扩展，其兄弟 HTTP 上传端点传递原始字节，不改变 `/mcp` 的核心语义，也不冒充官方实验文件扩展。其中服务端 Channel 推送 **MUST** 完全映射为标准 Resources 与 Subscriptions，MUST NOT 另造 vendor-specific Channel capability 或 notification。
 
 总览（全篇结构 —— Agent 生命周期 · 插件分发 · server 承载三层模型）：
 
@@ -70,6 +70,7 @@ flowchart TB
 - **MCP Resources · 发现**：`resources/list`、`resources/templates/list`、目录读取、缓存与注释（annotations）的使用策略（第 7 章）；
 - **MCP Resources · 使用**：读取、标准订阅、双向服务端抽象（`ChannelManager` / `Channel` / `send` / `receive`）、嵌入、引用跟随、输入需求、状态句柄（第 8 章）；其中缓存细化见 **MCPP Cache**（7.3）；
 - 超大载荷与私域数据的引用优先传递（8.6，stdio 同机 vs HTTP 跨机通道选择）；
+- 可选 [MCPP Files](mcp-files.md)：同一认证边界内的原始字节上传、文件 ID 及工具预检，不改变核心 MCP 传输，不等同于官方实验文件扩展；
 - Channel 服务端推送的纯标准 MCP 绑定边界与安全信任边界；
 - 技能的命令化（slash command）用户触达模式（5.9）；
 - 多 server 共存：冲突事实、注入治理抓手与协议底线（2.5）；

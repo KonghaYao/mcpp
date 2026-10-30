@@ -16,6 +16,7 @@ import {
   type StdioServerHandle,
   type StdioServerTransport,
 } from "@modelcontextprotocol/server/stdio";
+import type { FileMount } from "../files/http.ts";
 import { DEFAULT_MCPP_HTTP_HOST, DEFAULT_MCPP_HTTP_PORT } from "./defaults.ts";
 
 export type StartMode = "http" | "stdio";
@@ -30,6 +31,8 @@ export interface StartServerOptions {
   bus?: ServerEventBus;
   maxSubscriptions?: number;
   keepAliveMs?: number;
+  /** 仅 HTTP 模式显式挂载文件服务；生命周期由宿主共享管理。 */
+  files?: FileMount;
   onReady?: (info: { mode: StartMode; url?: string }) => void;
 }
 
@@ -69,13 +72,28 @@ async function runHttp(
   const port = Number(
     options.port ?? process.env.PORT ?? DEFAULT_MCPP_HTTP_PORT,
   );
-  const handler = createStrictHttpHandler(factory, options);
+  const files = options.files;
+  const handler = createStrictHttpHandler(
+    files ? files.wrapFactory(factory) : factory,
+    options,
+  );
   const bunServer = Bun.serve({
     hostname: host,
     port,
-    fetch: (request) => handler.fetch(request),
+    // 上传上限之外还允许 SDK 自己限制 JSON 控制消息；未启用 files 时保持 Bun 默认值。
+    ...(files
+      ? { maxRequestBodySize: Math.max(files.maxFileBytes, 1024 * 1024) }
+      : {}),
+    fetch: (request) => {
+      if (!files) return handler.fetch(request);
+      const path = new URL(request.url).pathname;
+      if (path === files.uploadPath) return files.fetchUpload(request);
+      if (path === files.endpointPath)
+        return files.fetchMcp(request, (request) => handler.fetch(request));
+      return new Response(null, { status: 404 });
+    },
   });
-  const url = `http://${host}:${bunServer.port}/mcp`;
+  const url = `http://${host}:${bunServer.port}${files?.endpointPath ?? "/mcp"}`;
 
   return {
     mode: "http",
