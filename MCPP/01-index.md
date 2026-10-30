@@ -29,12 +29,13 @@
 | [Channel SDK 接口](12-channel-sdk.md)           | 第 8.2.1 节        | `ChannelManager`、`Channel`、`ChannelStore`、`send`、`receive` 的 TypeScript 风格契约 |
 | [MCP Extension](13-mcp-extensions.md)           | 第 9 章            | 扩展标识、能力位、协商与最低实现面                                                    |
 | [MCP Apps](14-mcp-apps.md)                      | 扩展主题           | MCP Apps 的注册、状态、工具结果与 HTML 挂载                                           |
+| [MCPP Files](19-mcp-files.md)                   | 可选扩展主题       | 原始字节上传、稳定授权范围、文件引用、工具预检与生命周期                              |
 | [安全与信任](15-security.md)                    | 第 10 章           | 不可信内容、origin、批准、权限与缓存隔离                                              |
 | [一致性要求](16-conformance.md)                 | 第 11 章           | Server / Skill 与 Agent / Host 的可验证要求                                           |
 | [参考实现](17-reference-implementation.md)      | 附录 A             | 规范与仓库实现的映射及待办                                                            |
 | [术语](18-glossary.md)                          | 附录 B             | 全库统一术语定义                                                                      |
-| [MCP Tasks](19-mcp-tasks.md)                    | 扩展主题           | 官方 Tasks 协议绑定、Tier 1 状态机、权限与业务恢复边界                                |
-| [Tasks SDK 接口](20-tasks-sdk.md)               | 扩展主题           | TaskStore、TaskService、任务工具注册与轻量 Host 轮询                                  |
+| [MCP Tasks](20-mcp-tasks.md)                    | 扩展主题           | 官方 Tasks 协议绑定、Tier 1 状态机、权限与业务恢复边界                                |
+| [Tasks SDK 接口](21-tasks-sdk.md)               | 扩展主题           | TaskStore、TaskService、任务工具注册与轻量 Host 轮询                                  |
 
 ## 推荐阅读路径
 

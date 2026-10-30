@@ -30,6 +30,12 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 完整规范见 [`MCPP/01-index.md`](../../MCPP/01-index.md)。相关主题包括 [Agent Plugin](../../MCPP/04-agent-plugin.md)、[MCP Apps](../../MCPP/14-mcp-apps.md)、[MCP Mono Server](../../MCPP/05-mcp-mono-server.md)、[MCP Channel](../../MCPP/11-mcp-channel.md) 和 [Channel SDK 接口](../../MCPP/12-channel-sdk.md)。
 
+## 可选 Files 扩展
+
+`@peri-code/mcpp/files` 提供 `FileService`、`createFileMount` 与 `registerFileTool`；`@peri-code/mcpp/files/client` 提供独立浏览器 HTTP helper。服务端使用可选 peer `flydrive@2.2.0`，通过 `startServer(factory, { files })` 或 `GatewayRoute.files` 显式挂载上传及可信授权映射；未启用时不自动引入 FlyDrive/AWS 或开启上传 listener。完整协议及边界见 [MCPP Files](../../MCPP/19-mcp-files.md)。
+
+Files 与 Tasks 分别按各自 helper 注册，不自动把文件工具变成任务工具，也不自动把请求级文件句柄转交给后台执行。组合业务需自行完成文件授权/预检、工作副本及任务生命周期管理；任务 TTL 不延长文件 TTL。
+
 ## Tasks Tier 1
 
 新增 `@peri-code/mcpp/tasks`（根入口也导出）。在应用启动时创建共享 `TaskService`；请求级 factory 返回 `TasksServer`，注入每次调用的可信 `resolveScope`，再用 `registerTaskTool` 登记任务工具。普通工具继续 `registerTool`，已有 `startServer`、`createMcpHandler`、`serveStdio` 调用方式不变。**不能在 factory 中逐请求创建 service/store，也不能从客户端 `_meta` 或默认 clientId 推导用户 owner。**
@@ -71,7 +77,7 @@ const factory = () => {
 
 Tasks 句柄和 get 使用 2026-07-28 扁平结构。最终结果才经过 outputSchema；业务 isError 仍 completed。Task signal 独立于请求；取消先存意图，ACK 不假装清理完成。`adopt` 只接管已有 Promise；`TaskPoller` 提供即时查询、建议间隔、blocked 暴露和进程内交付去重，可注入原始 MCP 请求协调器。
 
-原样固定发布 JSON 快照配合 SDK 公开 AJV provider 执行 wire 校验；`@modelcontextprotocol/ext-tasks@0.2.2/core/v2` 仅提供类型与附加投影，不使用旧 receiver；SDK 2.0 的公开 transport 边界兼容层已测试真实 HTTP 与 stdio 混用。默认 Memory 跨请求但不跨进程重启，自定义 Store 不自动恢复执行器。未实现 Tier 2、任务订阅、数据库/恢复算法、Peri inbox 或自动 OAuth。完整接口、可信 HTTP scope 接入及容量边界见 [Tasks SDK](../../MCPP/20-tasks-sdk.md)，验收见 [T01–T17](../../MCPP/16-conformance.md)。
+原样固定发布 JSON 快照配合 SDK 公开 AJV provider 执行 wire 校验；`@modelcontextprotocol/ext-tasks@0.2.2/core/v2` 仅提供类型与附加投影，不使用旧 receiver；SDK 2.0 的公开 transport 边界兼容层已测试真实 HTTP 与 stdio 混用。默认 Memory 跨请求但不跨进程重启，自定义 Store 不自动恢复执行器。未实现 Tier 2、任务订阅、数据库/恢复算法、Peri inbox 或自动 OAuth。完整接口、可信 HTTP scope 接入及容量边界见 [Tasks SDK](../../MCPP/21-tasks-sdk.md)，验收见 [T01–T17](../../MCPP/16-conformance.md)。
 
 ## 运行要求
 

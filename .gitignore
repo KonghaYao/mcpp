@@ -8,6 +8,8 @@ dist/
 !examples/mcp-registry/fixtures/echo-mcp/dist/*.js
 examples/plugins/monorepo/dist-worker/
 examples/mcp-registry/data/
+# 本地文件上传示例的运行时存储，不纳入源码提交。
+.mcpp-files/
 *.tsbuildinfo
 .env
 .env.*

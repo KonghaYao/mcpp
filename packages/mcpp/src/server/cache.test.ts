@@ -102,6 +102,35 @@ describe("createMcppServerFactory", () => {
     });
   });
 
+  test("额外扩展与 cache capability 合并且限制变化改变快照", async () => {
+    const capability = {
+      version: 1,
+      uploadPath: "/mcp-upload",
+      maxFileBytes: 1024,
+      defaultTtlSeconds: 86400,
+    };
+    const factory = createMcppServerFactory(
+      { cacheVersion: "files-v1", extensions: { "io.mcpp/files": capability } },
+      (_request, mcpp) => {
+        expect(mcpp.capabilities.extensions?.["io.mcpp/files"]).toEqual(
+          capability,
+        );
+        expect(
+          mcpp.capabilities.extensions?.[MCPP_SERVER_CACHE_VERSION_EXTENSION],
+        ).toEqual({ cacheVersion: "files-v1" });
+        return server;
+      },
+    );
+    await factory(context);
+    expect(
+      await createCacheVersion({ extensions: { "io.mcpp/files": capability } }),
+    ).not.toBe(
+      await createCacheVersion({
+        extensions: { "io.mcpp/files": { ...capability, maxFileBytes: 2048 } },
+      }),
+    );
+  });
+
   test("允许覆盖 TTL，并强制 private cache 提供 authorization context", async () => {
     const invalidFactory = createMcppServerFactory(
       { cacheVersion: "snapshot-v1", scope: "private" },

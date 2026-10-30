@@ -29,7 +29,7 @@ test("仓库 Prettier 规则保护原样 vendor 与既有 .peri 规则", async (
 
 test("直接读取规范正文的 JSON 示例并用官方 schema 校验", async () => {
   const document = await Bun.file(
-    new URL("../../../../MCPP/19-mcp-tasks.md", import.meta.url),
+    new URL("../../../../MCPP/20-mcp-tasks.md", import.meta.url),
   ).text();
   const examples = [...document.matchAll(/```json\n([\s\S]*?)\n```/g)].map(
     (match) => JSON.parse(match[1]!),

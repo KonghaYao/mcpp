@@ -4,7 +4,7 @@
 
 Channel 不属于 MCP Extension；其纯标准绑定见 [MCP Channel](11-mcp-channel.md)。
 
-本章定义 **MCP Extension**——MCPP 已登记扩展能力的声明与双向协商约定：扩展标识与版本、能力位、最低实现面。MCPP 不发明新的传输语义，协商机制沿用 MCP 扩展机制。[MCP Channel](11-mcp-channel.md) 不属于 MCP Extension：`ChannelManager` / `Channel` / `send` / `receive` 仅为 SDK 内部抽象，线级仅使用标准 Resources、Subscriptions 与 Tools，因此不得为 Channel 增加 extension capability 或私有 JSON-RPC method。
+本章定义 **MCP Extension**——MCPP 已登记扩展能力的声明与双向协商约定：扩展标识与版本、能力位、最低实现面。核心 MCP 传输语义保持不变，协商机制沿用 MCP 扩展机制；[MCPP Files](19-mcp-files.md) 另定义同一授权边界内的可选二进制 HTTP 上传端点。[MCP Channel](11-mcp-channel.md) 不属于 MCP Extension：`ChannelManager` / `Channel` / `send` / `receive` 仅为 SDK 内部抽象，线级仅使用标准 Resources、Subscriptions 与 Tools，因此不得为 Channel 增加 extension capability 或私有 JSON-RPC method。
 
 ## 9.1 扩展标识与版本
 
@@ -26,7 +26,8 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 | `io.mcpp/skill-orchestration`                  | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载                                             |
 | `io.mcpp/context-budget`                       | agent-side              | Agent 支持 `io.mcpp/context_budget` 预算约束                                                                           |
 | `io.mcpp/server-cache-version`                 | 双向协商                | Agent 支持按 Server Cache Version 复用 MCPP Cache；Server 声明 opaque `cacheVersion`                                   |
-| `io.modelcontextprotocol/tasks`                | 双向、每次请求          | capability 严格 `{}`；Tier 1 任务创建、get/update/cancel 与可替换 Store，见 [MCP Tasks](19-mcp-tasks.md)               |
+| `io.mcpp/files`                                | 双向逐请求协商          | v1 同源原始字节上传、文件 ID、稳定授权范围与统一工具预检，见 [MCPP Files](19-mcp-files.md)                             |
+| `io.modelcontextprotocol/tasks`                | 双向、每次请求          | capability 严格 `{}`；Tier 1 任务创建、get/update/cancel 与可替换 Store，见 [MCP Tasks](20-mcp-tasks.md)               |
 
 Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 
@@ -64,11 +65,12 @@ Server Cache Version 相等只证明 Server 声明的可缓存状态未变化，
 
 ## 9.4 最低实现面
 
-- 宣称 `io.modelcontextprotocol/tasks` 者，MUST 实现 [Tasks Tier 1](19-mcp-tasks.md)：普通工具调用分流、可查询句柄、get/cancel/update、可信授权分区、终态交付与可替换 Store；`update` 无待答 key 时仅验证并 ACK；扩展设置严格 `{}`，等级和持久化不进入 wire。每次相关请求检查声明，缺少能力返回 `-32021`；get/update/cancel 不受 Server Cache Version 或通用缓存豁免。Tier 2、订阅和业务恢复另行声明；
+- 宣称 `io.modelcontextprotocol/tasks` 者，MUST 实现 [Tasks Tier 1](20-mcp-tasks.md)：普通工具调用分流、可查询句柄、get/cancel/update、可信授权分区、终态交付与可替换 Store；`update` 无待答 key 时仅验证并 ACK；扩展设置严格 `{}`，等级和持久化不进入 wire。每次相关请求检查声明，缺少能力返回 `-32021`；get/update/cancel 不受 Server Cache Version 或通用缓存豁免。Tier 2、订阅和业务恢复另行声明；
 - 宣称实现 `io.modelcontextprotocol/skills` 的 Server，**MUST** 至少实现 `skills/list` 与 `skills/get`（空/局部列表合法）；
 - 宣称 `directoryRead` 者，**MUST** 对其以独立文件服务的每个 skill 命名空间内目录支持该方法（方法本身通用，不限于 skill scheme）；
 - `skills/get` 的未知 URI 返回 `-32602`，与 `resources/read` 未知资源一致；
 - 宣称 `io.mcpp/server-catalog` 者，MUST 实现 3.7.1 的 `mcpp/servers/list`、`mcpp/servers/get`、`mcpp/servers/resolve`，且 `resolve` 无副作用；
-- Agent 仅在看到对应声明后才调用相应方法；其余情况下 fallback 到 resources 渠道（3.4 的模板/指令基线）。
+- 宣称 `io.mcpp/files` 者，MUST 实现 [MCPP Files](19-mcp-files.md) 的 v1 能力字段、原始字节上传、稳定身份与 endpoint 隔离、统一工具预检、TTL、取消及清理；未知版本拒绝，缺失客户端声明返回 `-32021`，stdio 不自动启用上传；
+- Agent 仅在看到对应声明后才调用相应方法；其余情况下 fallback 到 resources 渠道（3.4 的模板/指令基线）；Files 不回退为 Base64 或自动读取本地路径。
 
 ---

@@ -1,6 +1,6 @@
 # Tasks SDK 接口与部署边界
 
-[文档库首页](01-index.md) · [MCP Tasks 规范](19-mcp-tasks.md) · [参考实现](17-reference-implementation.md)
+[文档库首页](01-index.md) · [MCP Tasks 规范](20-mcp-tasks.md) · [参考实现](17-reference-implementation.md)
 
 导出：`@peri-code/mcpp/tasks`，根入口同时导出。实现等级为 Tier 1，wire 校验使用 commit `b3d28aceaa6d49f5f92258e3d06b61ad6f111e84` 原样发布 JSON 快照，由 SDK 公开 AJV provider 编译；npm `core/v2` 只提供类型与附加投影。SDK 2.0 本身的现代 Tasks runtime 缺失，因此 `TasksServer` 仅在公开 `connect(Transport)` 边界分流已注册的任务工具与三个 `tasks/*` 方法；普通工具、资源、目录和 discover 仍由原 SDK 处理。不使用私有 SDK 字段、monkey patch 或旧 receiver。
 

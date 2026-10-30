@@ -14,7 +14,7 @@ MCPP Channel 模块的业务出站推送 **MUST** 只使用 MCP 2026-07-28 的�
 
 ## SDK 接口
 
-上述 Resource-only 限制只约束 Channel 业务出站。启用官方 [MCP Tasks](19-mcp-tasks.md) 扩展时，可以使用标准 `notifications/tasks` 投递完整任务状态；它不是 Resource 失效通知，也不要求先投影为 Resource。Tasks 状态订阅是独立可选能力，本仓库 Tasks Tier 1 参考实现采用轮询，不确认 taskIds 订阅。
+上述 Resource-only 限制只约束 Channel 业务出站。启用官方 [MCP Tasks](20-mcp-tasks.md) 扩展时，可以使用标准 `notifications/tasks` 投递完整任务状态；它不是 Resource 失效通知，也不要求先投影为 Resource。Tasks 状态订阅是独立可选能力，本仓库 Tasks Tier 1 参考实现采用轮询，不确认 taskIds 订阅。
 
 完整的 TypeScript 风格接口与不变量见 [Channel SDK 接口](12-channel-sdk.md)。Channel 是 MCPP SDK 模块，不是 MCP primitive，也不得成为私有 capability 或 JSON-RPC method。
 

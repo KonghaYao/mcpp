@@ -1,6 +1,6 @@
 # MCP Tasks：Tier 1 基础执行
 
-[文档库首页](01-index.md) · [SDK 接口](20-tasks-sdk.md) · [一致性要求](16-conformance.md)
+[文档库首页](01-index.md) · [SDK 接口](21-tasks-sdk.md) · [一致性要求](16-conformance.md)
 
 MCPP 复用官方 `io.modelcontextprotocol/tasks`，基于 MCP `2026-07-28`。规范报文以 ext-tasks commit `b3d28aceaa6d49f5f92258e3d06b61ad6f111e84` 的发布快照为准：[规范](https://github.com/modelcontextprotocol/ext-tasks/blob/b3d28aceaa6d49f5f92258e3d06b61ad6f111e84/specification/2026-07-28/tasks.md)、[schema](https://github.com/modelcontextprotocol/ext-tasks/blob/b3d28aceaa6d49f5f92258e3d06b61ad6f111e84/schema/2026-07-28/schema.ts)。本仓库以该 commit 的完整 `schema.json` 原样快照为校验依据，通过 SDK 公开 `AjvJsonSchemaValidator` 编译；快照及 Apache-2.0 许可证位于 `packages/mcpp/src/tasks/vendor/`。固定 `@modelcontextprotocol/ext-tasks@0.2.2/core/v2` 仅用于 TS 类型与附加投影，不替代发布 JSON，不使用旧 receiver。
 
