@@ -8,9 +8,6 @@ dist/
 !examples/mcp-registry/fixtures/echo-mcp/dist/*.js
 examples/plugins/monorepo/dist-worker/
 examples/mcp-registry/data/
-packages/mcp-market/data/*
-!packages/mcp-market/data/.gitkeep
-packages/mcp-market/public-static/
 *.tsbuildinfo
 .env
 .env.*

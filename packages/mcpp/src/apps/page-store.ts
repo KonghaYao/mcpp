@@ -1,5 +1,5 @@
 /**
- * Server 状态 helper：revision、CAS、operation_id 幂等（MCPP/mcp-apps.md §3.4）。
+ * Server 状态 helper：revision、CAS、operation_id 幂等（MCPP/14-mcp-apps.md §3.4）。
  */
 import { MCP_APP_ERROR } from "./constants.ts";
 import { appStateUri } from "./uri.ts";

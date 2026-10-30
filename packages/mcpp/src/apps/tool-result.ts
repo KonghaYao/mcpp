@@ -1,5 +1,5 @@
 /**
- * 工具结果 helper：文本回退 + structuredContent（MCPP/mcp-apps.md §2.2）。
+ * 工具结果 helper：文本回退 + structuredContent（MCPP/14-mcp-apps.md §2.2）。
  */
 import type { McpAppPageStructuredContent } from "./constants.ts";
 

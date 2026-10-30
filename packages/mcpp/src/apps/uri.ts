@@ -1,5 +1,5 @@
 /**
- * MCP Apps URI 构造与校验（MCPP/mcp-apps.md §2.1、§3.1）。
+ * MCP Apps URI 构造与校验（MCPP/14-mcp-apps.md §2.1、§3.1）。
  */
 
 const UI_URI_RE = /^ui:\/\/[\w./-]+$/;

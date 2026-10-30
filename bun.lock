@@ -3,18 +3,11 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "peri-studio",
+      "name": "mcpp",
       "devDependencies": {
         "husky": "^9.1.7",
         "lint-staged": "^17.4.1",
         "prettier": "3.6.2",
-      },
-    },
-    "examples/anydoc-client": {
-      "name": "@open-mcp-market/anydoc-client-e2e",
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^7",
       },
     },
     "examples/anydoc-mcp": {
@@ -58,16 +51,6 @@
         "typescript": "^7",
       },
     },
-    "packages/mcp-market": {
-      "name": "@open-mcp-market/server",
-      "dependencies": {
-        "hono": "^4.9.2",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^7",
-      },
-    },
     "packages/mcpp": {
       "name": "@peri-code/mcpp",
       "version": "0.8.0",
@@ -107,11 +90,7 @@
 
     "@modelcontextprotocol/server": ["@modelcontextprotocol/server@2.0.0", "", { "dependencies": { "@modelcontextprotocol/core": "2.0.0", "zod": "^4.2.0" } }, "sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw=="],
 
-    "@open-mcp-market/anydoc-client-e2e": ["@open-mcp-market/anydoc-client-e2e@workspace:examples/anydoc-client"],
-
     "@open-mcp-market/anydoc-mcp-demo": ["@open-mcp-market/anydoc-mcp-demo@workspace:examples/anydoc-mcp"],
-
-    "@open-mcp-market/server": ["@open-mcp-market/server@workspace:packages/mcp-market"],
 
     "@peri-code/mcpp": ["@peri-code/mcpp@workspace:packages/mcpp"],
 

@@ -1,5 +1,5 @@
 /**
- * MCP Apps 常量（MCPP/mcp-apps.md §1–2）。
+ * MCP Apps 常量（MCPP/14-mcp-apps.md §1–2）。
  */
 
 /** 官方 Apps 扩展 id（client capabilities.extensions）。 */

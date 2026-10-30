@@ -2,12 +2,12 @@
  * @peri-code/mcpp —— MCPP (MCP Plus) 规范行为的参考实现（Server 侧）。
  *
  * 对应 MCPP 规范文档库（MCPP/）：
- *  - skills：resource 挂载、skill:// URI、frontmatter、digest（mcp-skills.md）
- *  - agents：agent.md 校验与 agent:// Resource 挂载（mcp-skills.md）
- *  - server：双模式启动（agent-plugin.md）
- *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（mcp-mono-server.md）
- *  - plugin：plugin.json / mcp.json 校验（agent-plugin.md）
- *  - apps：MCP Apps 注册、状态、工具结果与 HTML 挂载（mcp-apps.md）
+ *  - skills：resource 挂载、skill:// URI、frontmatter、digest（07-mcp-skills.md）
+ *  - agents：agent.md 校验与 agent:// Resource 挂载（07-mcp-skills.md）
+ *  - server：双模式启动（04-agent-plugin.md）
+ *  - gateway：monorepo 多 server 聚合 HTTP 路径路由（05-mcp-mono-server.md）
+ *  - plugin：plugin.json / mcp.json 校验（04-agent-plugin.md）
+ *  - apps：MCP Apps 注册、状态、工具结果与 HTML 挂载（14-mcp-apps.md）
  */
 export * from "./cache.ts";
 export * from "./types.ts";

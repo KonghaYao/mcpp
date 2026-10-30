@@ -3,7 +3,7 @@
  * （MCPP 3.4 通道 B 投影），经聚合网关在 /openspec/mcp 端点暴露。
  *
  * 来源：Fission-AI/OpenSpec 的 skills 集合（驱动 `openspec` CLI 的工作流，
- * 12 个 openspec-* skill，见 skills/README.md）。本项目作为第三方 skills 集
+ * 12 个 openspec-* skill，见 skills/01-readme.md）。本项目作为第三方 skills 集
  * 直接投放：任何客户端连上该端点即可发现与读取 SKILL.md。
  *
  * 约定同 SDK 的 ResourceForSkills：skills/ 目录的每个子目录（含 SKILL.md）即一个 skill，

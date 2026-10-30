@@ -1,24 +1,18 @@
-name: Release
+name: Verify
 
-# Every push and pull request is verified. The image is built and published only
-# for refs that are meant to be deployable: the default branch and version tags.
-# Deployment itself is not automated here — the server pulls the published tag.
+# Every push to the default branch, every pull request, and manual runs verify
+# the workspace with a frozen dependency install, typecheck and tests. Nothing
+# is built, published or deployed here.
 
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: release-${{ github.ref }}
-  # A superseded build on a branch is wasted work, but a tag is a release
-  # artifact: never cancel one midway.
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
-
-env:
-  REGISTRY: ghcr.io
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -34,124 +28,3 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun test
-
-  publish:
-    needs: verify
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      # Registry paths are lowercase-only and `github.repository` keeps the
-      # owner's casing (`KonghaYao/mcpp`), so the name is normalised here rather
-      # than left to the metadata action.
-      - name: Resolve image repository
-        run: echo "IMAGE_REPO=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
-
-      # The build reads this as a secret file rather than a secret value: buildx
-      # rejects an empty value (`npmrc=` is not a valid secret), and the registry
-      # is optional, so the file always exists and is empty when NPMRC is unset.
-      - name: Stage the private registry's .npmrc
-        env:
-          NPMRC: ${{ secrets.NPMRC }}
-        run: |
-          install -m 600 /dev/null "$RUNNER_TEMP/npmrc"
-          printf '%s' "$NPMRC" > "$RUNNER_TEMP/npmrc"
-
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Tags `main` and `latest` on the default branch, `1.2.3` and `1.2` for a
-      # `v1.2.3` tag, plus the commit SHA so any deployed container can be
-      # traced back to a revision.
-      - id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=long
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      # Built and loaded first so the smoke test exercises the same image that
-      # is about to be published: a multi-platform push never reaches the local
-      # daemon, and "build succeeded, container refuses to start" is exactly the
-      # failure this catches. The dependency layout inside the image is the
-      # fragile part — it survives review and dies on first boot.
-      - name: Build for smoke test
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: packages/mcp-market/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: mcpm-market:smoke
-          cache-from: type=gha
-          # Optional private registry. Unset — which is the default — builds
-          # against the public one. `NPM_REGISTRY` is a repository variable, the
-          # credentials an `NPMRC` secret holding an `.npmrc`.
-          build-args: |
-            NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
-          secret-files: |
-            npmrc=${{ runner.temp }}/npmrc
-
-      - name: Smoke test
-        run: |
-          set -euo pipefail
-          HASH=$(docker run --rm oven/bun:1 bun -e 'console.log(await Bun.password.hash("smoke-test-password", { algorithm: "argon2id" }))')
-          docker run -d --name smoke -p 127.0.0.1:18080:3000 \
-            -e MCPM_ADMIN_USERNAME=admin \
-            -e MCPM_ADMIN_PASSWORD_HASH="$HASH" \
-            -e MCPM_SESSION_SECRET="$(openssl rand -hex 32)" \
-            -e MCPM_REGISTRY_URL=https://registry.npmjs.org \
-            -e MCPM_SECURE_COOKIES=false \
-            mcpm-market:smoke
-
-          ready=""
-          for _ in $(seq 1 30); do
-            if curl -fsS -o /dev/null http://127.0.0.1:18080/health/ready; then
-              ready=yes
-              break
-            fi
-            sleep 2
-          done
-          if [ -z "$ready" ]; then
-            echo "::error::container never became ready"
-            docker logs smoke
-            exit 1
-          fi
-
-          curl -fsS -o /dev/null http://127.0.0.1:18080/
-          echo "health/ready and the public home page both answered"
-          docker rm -f smoke
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: packages/mcp-market/Dockerfile
-          # arm64 costs a QEMU-emulated dependency install. Drop it if every
-          # target host is x86-64.
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: true
-          sbom: true
-          build-args: |
-            NPM_REGISTRY=${{ vars.NPM_REGISTRY }}
-          secret-files: |
-            npmrc=${{ runner.temp }}/npmrc

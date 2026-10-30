@@ -1,5 +1,5 @@
 /**
- * ResourceForApps —— 挂载 Apps HTML 模板与 mcpp:// 页面状态 Resource（MCPP/mcp-apps.md §2.1、§6）。
+ * ResourceForApps —— 挂载 Apps HTML 模板与 mcpp:// 页面状态 Resource（MCPP/14-mcp-apps.md §2.1、§6）。
  */
 import {
   McpServer,

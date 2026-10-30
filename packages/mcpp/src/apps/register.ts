@@ -1,5 +1,5 @@
 /**
- * Server 注册 helper（MCPP/mcp-apps.md §2.1、§6）。
+ * Server 注册 helper（MCPP/14-mcp-apps.md §2.1、§6）。
  */
 import type { McpUiVisibility } from "./constants.ts";
 import { MCP_APP_HTML_MIME, MCP_UI_VISIBILITY_DEFAULT } from "./constants.ts";

@@ -1,5 +1,5 @@
 /**
- * 构建 helper：HTML 入口校验（MCPP/mcp-apps.md §5.1–5.2）。
+ * 构建 helper：HTML 入口校验（MCPP/14-mcp-apps.md §5.1–5.2）。
  */
 
 const EXTERNAL_SCRIPT_RE = /<script[^>]+src=["'](https?:|\/\/)/i;

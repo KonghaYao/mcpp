@@ -1,5 +1,5 @@
 /**
- * Singleton 实例键与 Host 侧索引 helper（MCPP/mcp-apps.md §3.1）。
+ * Singleton 实例键与 Host 侧索引 helper（MCPP/14-mcp-apps.md §3.1）。
  */
 import type { SingletonInstanceKey } from "./constants.ts";
 

@@ -1,5 +1,5 @@
 /**
- * MCP Apps helper（MCPP/mcp-apps.md §6）。
+ * MCP Apps helper（MCPP/14-mcp-apps.md §6）。
  */
 export * from "./constants.ts";
 export * from "./uri.ts";
