@@ -67,4 +67,30 @@
 - 任一 MUST 项不满足（约定职责内）—— non-conforming，互操作不保证；
 - SHOULD / RECOMMENDED 项满足与否需在实现说明中声明。
 
+## 11.4 Tasks 分级与参考实现覆盖
+
+只有声明官方 Tasks 扩展的实现才承担以下 Tasks MUST。Tier、Memory/持久化部署、可选订阅三者独立；capability 始终严格 `{}`。规范见 [MCP Tasks](19-mcp-tasks.md)，接口见 [Tasks SDK](20-tasks-sdk.md)。下表的「覆盖」是当前仓库测试范围，不代表数据库恢复或 Peri inbox 产品已实现。
+
+| 编号 | 要求                                                                              | 等级        | 当前覆盖                                                                                                                                           |
+| ---- | --------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T01  | 普通结果与扁平任务句柄正确分流；示例通过 0728 schema，outputSchema 只校验最终结果 | Tier 1 MUST | `schema.test.ts` 直接读取规范示例，用固定发布 JSON 完整 $defs 校验；另检查 npm 差异；`server.test.ts` 真实 HTTP/stdio、普通工具/资源/discover 混用 |
+| T02  | 本次能力缺失返回 -32021；强制异步工具在执行前拒绝                                 | Tier 1 MUST | `server.test.ts` 每请求声明、严格空 capability、真正 JSON-RPC 错误与零执行                                                                         |
+| T03  | 返回 taskId 后立即跨 HTTP 请求查询可见                                            | Tier 1 MUST | `service.test.ts` 原子可见；`server.test.ts` 请求级 Server 共享 service                                                                            |
+| T04  | 工具仅执行一次；响应丢失、登记或轮询失败不得触发重放                              | Tier 1 MUST | Service 单次启动/接管、HTTP 断流与丢弃响应、Poller 不拥有原 call 且失败只查询/重交付                                                               |
+| T05  | 前台转后台只接管原执行，快速完成不丢终态                                          | Tier 1 MUST | `service.test.ts` adopt；`regressions.test.ts` 真实 HTTP/stdio 同步完成与超时 promote、最终校验、登记失败不重跑                                    |
+| T06  | 正常和 isError 结果 completed；协议执行错误 failed                                | Tier 1 MUST | `service.test.ts` 完整结果/错误语义、异常脱敏；集成测试最终 outputSchema                                                                           |
+| T07  | 重复取消安全，ACK 不提前 cancelled，完成竞争不覆盖终态                            | Tier 1 MUST | 意图先存再 abort、清理确认、completed 获胜、外部回调失败与重试                                                                                     |
+| T08  | endpoint/owner 隔离，get/update/cancel 每次授权；订阅不可越权确认                 | Tier 1 MUST | 三种方法真实 HTTP 隔离、伪造 \_meta 无效；真实 subscriptions/listen 不确认 taskIds，当前不提供任务订阅                                             |
+| T09  | 迟到写入不覆盖终态，相同业务入口终态去重                                          | Tier 1 MUST | Service CAS/冲突/幂等；Poller 按 endpoint+scope+taskId+initiator 去重并重试相同交付                                                                |
+| T10  | 不删除活动任务或未到期终态，满载先拒绝后执行                                      | Tier 1 MUST | TTL、查询不续期、总记录/活动并发容量、UTF-8/预留预算、report/businessRef 上限                                                                      |
+| T11  | 默认 Memory 同一进程跨请求共享，重启不伪装恢复                                    | Tier 1 MUST | `server.test.ts` HTTP 共享；`service.test.ts` 新 Memory 不存在旧任务                                                                               |
+| T12  | 可注入与数据库无关的 TaskStore                                                    | Tier 1 MUST | 四操作代理 Store、CAS 冲突重读、受信历史任务 report/settle                                                                                         |
+| T13  | update 兼容 ACK 不写业务输入事实，Host 暴露 input_required                        | Tier 1 MUST | 官方 inputResponses 校验与 revision 不变；Poller 保留完整请求并 blocked                                                                            |
+| T14  | 订阅先授权后 ACK、先存后通知、断流回读、有界背压                                  | 可选订阅    | 未实现，不声明覆盖                                                                                                                                 |
+| T15  | 输入请求、部分/重复响应、拒绝及超时推进                                           | Tier 2      | 未实现                                                                                                                                             |
+| T16  | 输入与取消/完成竞争不重复执行，请求 key 永不复用                                  | Tier 2      | 未实现                                                                                                                                             |
+| T17  | 声明业务恢复时，重启核实原 job、不重跑且不丢取消意图                              | 业务选配    | 仅提供受信接口与取消意图记录；无真实持久化/恢复算法，不声明完成                                                                                    |
+
+测试入口：`bun test packages/mcpp/src/tasks`。`transport.test.ts` 是兼容接入的运行验证；`service.test.ts`、`server.test.ts`、`poller.test.ts`、`regressions.test.ts` 与 `schema.test.ts` 验证实际 Tier 1 流程。当前 Host helper 只保证进程内绑定/交付去重；跨重启可靠投递仍由业务负责。
+
 ---

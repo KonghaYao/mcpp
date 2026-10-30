@@ -30,6 +30,49 @@ MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK�
 
 完整规范见 [`MCPP/01-index.md`](../../MCPP/01-index.md)。相关主题包括 [Agent Plugin](../../MCPP/04-agent-plugin.md)、[MCP Apps](../../MCPP/14-mcp-apps.md)、[MCP Mono Server](../../MCPP/05-mcp-mono-server.md)、[MCP Channel](../../MCPP/11-mcp-channel.md) 和 [Channel SDK 接口](../../MCPP/12-channel-sdk.md)。
 
+## Tasks Tier 1
+
+新增 `@peri-code/mcpp/tasks`（根入口也导出）。在应用启动时创建共享 `TaskService`；请求级 factory 返回 `TasksServer`，注入每次调用的可信 `resolveScope`，再用 `registerTaskTool` 登记任务工具。普通工具继续 `registerTool`，已有 `startServer`、`createMcpHandler`、`serveStdio` 调用方式不变。**不能在 factory 中逐请求创建 service/store，也不能从客户端 `_meta` 或默认 clientId 推导用户 owner。**
+
+```ts
+import { z } from "zod";
+import { TaskService, TasksServer } from "@peri-code/mcpp/tasks";
+
+const tasks = new TaskService({ namespace: "reports" });
+const factory = () => {
+  const server = new TasksServer(
+    { name: "reports", version: "1" },
+    {
+      service: tasks,
+      // 仅适用于已由可信宿主固定授权的 stdio 连接；HTTP 应逐请求认证映射。
+      resolveScope: () => ({
+        namespace: "reports",
+        owner: "trusted-local-user",
+      }),
+    },
+  );
+  server.registerTaskTool(
+    "build",
+    { inputSchema: z.object({}) },
+    async (_, ctx) => {
+      await ctx.report("正在执行");
+      return {
+        kind: "result",
+        result: {
+          resultType: "complete",
+          content: [{ type: "text", text: "完成" }],
+        },
+      };
+    },
+  );
+  return server;
+};
+```
+
+Tasks 句柄和 get 使用 2026-07-28 扁平结构。最终结果才经过 outputSchema；业务 isError 仍 completed。Task signal 独立于请求；取消先存意图，ACK 不假装清理完成。`adopt` 只接管已有 Promise；`TaskPoller` 提供即时查询、建议间隔、blocked 暴露和进程内交付去重，可注入原始 MCP 请求协调器。
+
+原样固定发布 JSON 快照配合 SDK 公开 AJV provider 执行 wire 校验；`@modelcontextprotocol/ext-tasks@0.2.2/core/v2` 仅提供类型与附加投影，不使用旧 receiver；SDK 2.0 的公开 transport 边界兼容层已测试真实 HTTP 与 stdio 混用。默认 Memory 跨请求但不跨进程重启，自定义 Store 不自动恢复执行器。未实现 Tier 2、任务订阅、数据库/恢复算法、Peri inbox 或自动 OAuth。完整接口、可信 HTTP scope 接入及容量边界见 [Tasks SDK](../../MCPP/20-tasks-sdk.md)，验收见 [T01–T17](../../MCPP/16-conformance.md)。
+
 ## 运行要求
 
 - Bun

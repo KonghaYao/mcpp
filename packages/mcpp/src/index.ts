@@ -14,6 +14,7 @@ export * from "./types.ts";
 export * from "./skills/index.ts";
 export * from "./agents/index.ts";
 export * from "./apps/index.ts";
+export * from "./tasks/index.ts";
 export * from "./server/index.ts";
 export * from "./catalog.ts";
 export * from "./gateway.ts";

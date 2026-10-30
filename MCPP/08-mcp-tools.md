@@ -38,6 +38,8 @@ MCP 2026-07-28 无 protocol 层会话。跨调用的状态由**显式句柄**承
 
 ## 6.4 错误分类与重试
 
+启用 [MCP Tasks](19-mcp-tasks.md) 时，`tasks/get / update / cancel` 的未知、过期或不可见任务统一返回 JSON-RPC `-32602`。这不是普通 Unknown tool 或业务状态句柄重建信号，Host MUST NOT 因任务查询失败重放原 `tools/call`。工具 `outputSchema` 只校验最终业务结果，先按 `resultType` 区分普通结果与扁平任务句柄；任务 ACK 不等于终态。
+
 MCP 区分两类错误，MCPP 规定其 Agent 侧处置：
 
 | 错误类型                             | 载体                                         | 含义                           | Agent 处置                                        |

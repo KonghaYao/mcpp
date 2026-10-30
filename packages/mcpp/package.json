@@ -12,6 +12,7 @@
     "./skills/build": "./src/skills/build-static-skills.ts",
     "./agents": "./src/agents/index.ts",
     "./apps": "./src/apps/index.ts",
+    "./tasks": "./src/tasks/index.ts",
     "./server": "./src/server/index.ts",
     "./catalog": "./src/catalog.ts",
     "./gateway": "./src/gateway.ts",
@@ -22,6 +23,7 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-tasks": "0.2.2",
     "@modelcontextprotocol/server": "^2.0.0",
     "yaml": "^2.6.1",
     "zod": "^4.4.3"

@@ -11,8 +11,9 @@ MCP Plus（以下简称 **MCPP**）是在 MCP 2026-07-28 之上的**协议扩展
 - 定义 **Agent Plugin** 作为标准分发与部署形态：`plugin.json` 身份清单、`skills/` 打包技能、`mcp.json` 声明的 MCP server 作为运行时执行载体（第 3 章），覆盖中心化 HTTP 挂载与端侧 stdio 两种执行形态；
 - 定义 **MCP Registry**、**MCP NPM Registry** 与 **MCP Mono Server** 三个独立系统：NPM Registry 是 keyword、manifest 与版本唯一权威；Registry 动态投影 Store；Mono Server 透明转发 HTTP MCP；Dynamic Host 通过成熟 Worker Isolate 编排层部署 Server runtime（第 4 章）；
 - 定义 **MCP Skills**（Skill 作为一等公民）的承载格式、传递约定与编排规则（依赖声明、拓扑加载、工具绑定），定义 **MCP Agents**（可下发的 subagent 配置资源）的承载、发现、激活与权限收敛规则，以及 **MCP Tools** 的 Agent 侧工具使用约定（第 5/6 章）；
-- 定义 **MCP Resources** 的 Agent 层统一策略：资源**发现**（渠道、过滤、排序、缓存、新鲜度，第 7 章）与资源**使用**（读取、订阅、嵌入、引用、输入需求、状态句柄，第 8 章）；其中缓存与新鲜度细化为 **MCPP Cache**（7.3），服务端推送以标准 Resource Subscription 为唯一线级机制，并定义 `ChannelManager` / `Channel` / `send` / `receive` SDK 抽象（8.2）；
+- 定义 **MCP Resources** 的 Agent 层统一策略：资源**发现**（渠道、过滤、排序、缓存、新鲜度，第 7 章）与资源**使用**（读取、订阅、嵌入、引用、输入需求、状态句柄，第 8 章）；其中缓存与新鲜度细化为 **MCPP Cache**（7.3），Channel 模块业务出站推送以标准 Resource Subscription 为唯一线级机制，并定义 `ChannelManager` / `Channel` / `send` / `receive` SDK 抽象（8.2）；
 - 定义 **MCP Extension** 的扩展声明与双向协商约定（能力位、版本、最低实现面，第 9 章）；其中 Channel 服务端推送不新增 capability 或私有 JSON-RPC method；
+- 定义 [MCP Tasks](19-mcp-tasks.md) 的 Tier 1 基础执行与 [Tasks SDK](20-tasks-sdk.md)：复用官方 `io.modelcontextprotocol/tasks`，可选标准 `notifications/tasks` 不受 Channel Resource-only 约束；
 - 为 server 与 Agent 提供可验证的 **一致性要求**（conformance requirements）。
 
 MCPP 同时具有**双重身份**：

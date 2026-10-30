@@ -26,6 +26,7 @@ MCPP 的能力需要 server 与 Agent 双向显式协商，遵循 MCP 扩展的�
 | `io.mcpp/skill-orchestration`                  | agent-side（host 声明） | Agent 支持 `io.mcpp/depends_on` / `io.mcpp/tools` 编排字段的解析与拓扑加载                                             |
 | `io.mcpp/context-budget`                       | agent-side              | Agent 支持 `io.mcpp/context_budget` 预算约束                                                                           |
 | `io.mcpp/server-cache-version`                 | 双向协商                | Agent 支持按 Server Cache Version 复用 MCPP Cache；Server 声明 opaque `cacheVersion`                                   |
+| `io.modelcontextprotocol/tasks`                | 双向、每次请求          | capability 严格 `{}`；Tier 1 任务创建、get/update/cancel 与可替换 Store，见 [MCP Tasks](19-mcp-tasks.md)               |
 
 Server 的 skill 能力声明（示意，wire 细节属 MCP 层）：
 
@@ -63,6 +64,7 @@ Server Cache Version 相等只证明 Server 声明的可缓存状态未变化，
 
 ## 9.4 最低实现面
 
+- 宣称 `io.modelcontextprotocol/tasks` 者，MUST 实现 [Tasks Tier 1](19-mcp-tasks.md)：普通工具调用分流、可查询句柄、get/cancel/update、可信授权分区、终态交付与可替换 Store；`update` 无待答 key 时仅验证并 ACK；扩展设置严格 `{}`，等级和持久化不进入 wire。每次相关请求检查声明，缺少能力返回 `-32021`；get/update/cancel 不受 Server Cache Version 或通用缓存豁免。Tier 2、订阅和业务恢复另行声明；
 - 宣称实现 `io.modelcontextprotocol/skills` 的 Server，**MUST** 至少实现 `skills/list` 与 `skills/get`（空/局部列表合法）；
 - 宣称 `directoryRead` 者，**MUST** 对其以独立文件服务的每个 skill 命名空间内目录支持该方法（方法本身通用，不限于 skill scheme）；
 - `skills/get` 的未知 URI 返回 `-32602`，与 `resources/read` 未知资源一致；

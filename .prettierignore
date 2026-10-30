@@ -1,2 +1,5 @@
 # ADLC 审计记录由工具生成，不属于产品代码，不纳入格式化门禁
 .peri/
+
+# Tasks 官方发布快照与许可证保持原样；格式化会改变已验证的来源 SHA256
+packages/mcpp/src/tasks/vendor/

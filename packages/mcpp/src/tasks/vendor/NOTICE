@@ -1,0 +1,7 @@
+MCP Tasks Extension schema，Copyright 2025 The Model Context Protocol Authors。
+来源：https://github.com/modelcontextprotocol/ext-tasks/blob/b3d28aceaa6d49f5f92258e3d06b61ad6f111e84/schema/2026-07-28/schema.json
+上游 commit：b3d28aceaa6d49f5f92258e3d06b61ad6f111e84
+许可证：Apache-2.0，完整正文见同目录 LICENSE。
+快照未修改；由 packages/mcpp/scripts/update-tasks-snapshot.ts 从固定页面 rawLines 导入。
+SHA256：bf30afb7ac251e3e22c037b7a685f60ef6603031b5484c0d08b1fa0bbe86d460
+MCPP 的 schema.ts 仅选择原始 $defs 根节点进行验证，不重写上游定义。

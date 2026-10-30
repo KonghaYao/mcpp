@@ -33,6 +33,8 @@
 | [一致性要求](16-conformance.md)                 | 第 11 章           | Server / Skill 与 Agent / Host 的可验证要求                                           |
 | [参考实现](17-reference-implementation.md)      | 附录 A             | 规范与仓库实现的映射及待办                                                            |
 | [术语](18-glossary.md)                          | 附录 B             | 全库统一术语定义                                                                      |
+| [MCP Tasks](19-mcp-tasks.md)                    | 扩展主题           | 官方 Tasks 协议绑定、Tier 1 状态机、权限与业务恢复边界                                |
+| [Tasks SDK 接口](20-tasks-sdk.md)               | 扩展主题           | TaskStore、TaskService、任务工具注册与轻量 Host 轮询                                  |
 
 ## 推荐阅读路径
 

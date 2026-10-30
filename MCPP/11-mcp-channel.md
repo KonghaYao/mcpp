@@ -4,7 +4,7 @@
 
 类型接口：[Channel SDK 接口](12-channel-sdk.md) · 一致性条款：[S16–S21](16-conformance.md)
 
-MCPP 的服务端推送 **MUST** 只使用 MCP 2026-07-28 的标准 Resource Subscription：Server 将可推送对象建模为可读取 Resource，Client 通过 `subscriptions/listen` 订阅稳定 Resource URI；对象变化时 Server 发送 `notifications/resources/updated`，Client 再以 `resources/read` 读取最新事实。通知只是**失效信号**，不是事件正文、可靠消息或 Agent turn。
+MCPP Channel 模块的业务出站推送 **MUST** 只使用 MCP 2026-07-28 的标准 Resource Subscription：Server 将可推送对象建模为可读取 Resource，Client 通过 `subscriptions/listen` 订阅稳定 Resource URI；对象变化时 Server 发送 `notifications/resources/updated`，Client 再以 `resources/read` 读取最新事实。通知只是**失效信号**，不是事件正文、可靠消息或 Agent turn。
 
 - Server 声明 `resources.subscribe: true` 时，具体资源变化经 `subscriptions/listen` 的 `resourceSubscriptions` 过滤器投递；只有新增、删除或重命名 Resource 导致目录变化时，才在声明 `resources.listChanged: true` 后发送 `notifications/resources/list_changed`；
 - Agent **MUST** 在 `notifications/resources/updated` 到达后将对应读取缓存视为 stale。若该资源正被用户查看或属于当前任务的活跃引用，Agent SHOULD 主动重取；其余场景在下次使用时重取；
@@ -13,6 +13,8 @@ MCPP 的服务端推送 **MUST** 只使用 MCP 2026-07-28 的标准 Resource Sub
 - MCPP **MUST NOT** 使用自定义 Channel notification 或其他 vendor-specific 线级方法。Host 是否把更新加入模型上下文、展示 UI 或启动新的 Agent turn，属于 Host 策略，不是 MCP 推送语义。
 
 ## SDK 接口
+
+上述 Resource-only 限制只约束 Channel 业务出站。启用官方 [MCP Tasks](19-mcp-tasks.md) 扩展时，可以使用标准 `notifications/tasks` 投递完整任务状态；它不是 Resource 失效通知，也不要求先投影为 Resource。Tasks 状态订阅是独立可选能力，本仓库 Tasks Tier 1 参考实现采用轮询，不确认 taskIds 订阅。
 
 完整的 TypeScript 风格接口与不变量见 [Channel SDK 接口](12-channel-sdk.md)。Channel 是 MCPP SDK 模块，不是 MCP primitive，也不得成为私有 capability 或 JSON-RPC method。
 
