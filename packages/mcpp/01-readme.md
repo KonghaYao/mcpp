@@ -2,12 +2,13 @@
 
 MCPP（MCP Plus）的 Server 侧 TypeScript 参考实现。该包基于 MCP SDK，提供 Skills / Agents 资源挂载、**MCP Apps** 辅助函数、MCP Server 双模式启动、多 Server HTTP 网关，以及 Agent Plugin 清单校验。
 
-> 当前状态：`0.8.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
+> 当前状态：`0.9.0`。MCPP 规范仍处于 Draft 阶段，API 可能随规范演进而调整。
 
 ## 版本更新
 
 | 版本    | 主要更新                                                                                                                                                                                                                                                                                         |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `0.9.0` | 新增 `@peri-code/mcpp/files`（含可选 `@peri-code/mcpp/files/client`，可选 peer `flydrive@2.2.0`）与 `@peri-code/mcpp/tasks`（Tier 1，SDK 2.0 协议适配）。                                                                                                                                        |
 | `0.8.0` | 新增 `@peri-code/mcpp/apps`：MCP Apps Server 侧 helper（`ResourceForApps`、`AppPageStore`、工具 `_meta.ui`、工具结果 structuredContent、Singleton 键、HTML 发布校验）。规范见 [MCP Apps](../../MCPP/14-mcp-apps.md)。                                                                            |
 | `0.6.5` | 为 `ResourceForStaticSkills` 增加与实时 Skills 一致的 MCPP Cache（`McppCache`）、TTL、`public` / `private` scope 和 opaque authorization context 隔离；同时支持协商 Server Cache Version（`cacheVersion`），相等时可直接复用 MCPP Response Cache 与 Resource Content Cache，不相等时拒绝旧条目。 |
 | `0.5.0` | 引入统一的进程内 `McppCache`；实时 `ResourceForSkills` 支持按 origin、MCP method、参数和授权上下文隔离缓存，并可按 Resource URI 精确失效。                                                                                                                                                       |

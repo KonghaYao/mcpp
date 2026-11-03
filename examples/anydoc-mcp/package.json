@@ -28,7 +28,7 @@
   "dependencies": {
     "@firecrawl/anydoc": "0.2.3",
     "@modelcontextprotocol/server": "^2.0.0",
-    "@peri-code/mcpp": "^0.8.0",
+    "@peri-code/mcpp": "^0.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
